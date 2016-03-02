@@ -57,11 +57,7 @@ The following contracts interact with the DAO
 
 #####SampleOffer.sol
 
-#####BasicSlock.sol
-
 #####ManagedAccount.sol
-
-#####SubUser.sol
 
 #### Boiler Plate
 

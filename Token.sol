@@ -71,6 +71,11 @@ contract Token is TokenInterface {
     modifier noEther() {if (msg.value > 0) throw; _}
 
 
+    function balanceOf(address _owner) constant returns (uint256 balance) {
+        return balances[_owner];
+    }
+
+
     function transfer(address _to, uint256 _amount) noEther returns (bool success) {
         if (balances[msg.sender] >= _amount && _amount > 0) {
             balances[msg.sender] -= _amount;
@@ -100,11 +105,6 @@ contract Token is TokenInterface {
         allowed[msg.sender][_spender] = _amount;
         Approval(msg.sender, _spender, _amount);
         return true;
-    }
-
-
-    function balanceOf(address _owner) constant returns (uint256 balance) {
-        return balances[_owner];
     }
 
 

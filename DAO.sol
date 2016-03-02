@@ -198,7 +198,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function DAO(address _defaultServiceProvider, DAO_Creator _daoCreator, uint _minValue, uint _closingTime) TokenSale(_minValue, _closingTime) {
+    function DAO(address _defaultServiceProvider, DAO_Creator _daoCreator, uint _minValue, uint _closingTime, address _privateSale) TokenSale(_minValue, _closingTime, _privateSale) {
         serviceProvider = _defaultServiceProvider;
         daoCreator = _daoCreator;
         proposalDeposit = 20 ether;
@@ -457,6 +457,6 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 contract DAO_Creator {
     function createDAO(address _defaultServiceProvider, uint _minValue, uint _closingTime) returns (DAO _newDAO) {
-        return new DAO(_defaultServiceProvider, DAO_Creator(this), _minValue, _closingTime);
+        return new DAO(_defaultServiceProvider, DAO_Creator(this), _minValue, _closingTime, msg.sender);
     }
 }

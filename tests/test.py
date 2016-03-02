@@ -10,7 +10,7 @@ import subprocess
 import shutil
 import sys
 from datetime import datetime
-datetime.utcnow()
+import calendar
 
 
 def is_exe(fpath):
@@ -49,6 +49,11 @@ class TestContext():
         self.solc = get_solc(args.solc)
         if args.clean_chain:
             self.clean_blockchain()
+        self.closing_time = (
+            calendar.timegm(datetime.utcnow().utctimetuple()) +
+            args.closing_time * 60
+        )
+        self.min_value = args.min_value
 
     def clean_blockchain(self):
         """Clean all blockchain data directories apart from the keystore"""
@@ -88,14 +93,10 @@ class TestContext():
             DAOCreator["bin"]
         )
 
-g_ctx = None
-
-
-def create_deploy_js(dabi, dbin, cabi, cbin):
-    print("Rewritting deploy.js using the compiled contract...")
-    f = open("deploy.js", "w")
-    f.write(
-        """// geth --networkid 123 --nodiscover --maxpeers 0 --genesis ./genesis_block.json --datadir ./data  js deploy.js 2>>out.log.geth
+    def create_deploy_js(self, dabi, dbin, cabi, cbin):
+        print("Rewritting deploy.js using the compiled contract...")
+        f = open("deploy.js", "w")
+        f.write("""// geth --networkid 123 --nodiscover --maxpeers 0 --genesis ./genesis_block.json --datadir ./data  js deploy.js 2>>out.log.geth
 
 console.log("unlocking account");
 personal.unlockAccount(
@@ -125,35 +126,37 @@ function checkWork() {
 var _defaultServiceProvider = web3.eth.accounts[0];
 
 var daoContract = web3.eth.contract(""")
-    f.write(dabi)
-    f.write(""");
+        f.write(dabi)
+        f.write(""");
 
 console.log("Creating DAOCreator Contract");
 var creatorContract = web3.eth.contract(""")
-    f.write(cabi)
-    f.write(""");
+        f.write(cabi)
+        f.write(""");
 var _daoCreatorContract = creatorContract.new({from: web3.eth.accounts[0], data: '""");
-    f.write(cbin)
-    f.write("""',
-gas: 3000000
-   }, function(e, contract){
-       if (e) {
-           console.log(e+" at DAOCreator creation!");
-       }
-       if (typeof contract.address != 'undefined') {
-           console.log('DAOCreator mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
-           checkWork();
-           var dao = daoContract.new(
-               _defaultServiceProvider,
-               contract.address,
-               20,
-               1556842261,
-        {
-            from: web3.eth.accounts[0],
-            data: '""")
-    f.write(dbin)
-    f.write(
-        """',
+        f.write(cbin)
+        f.write("""',
+    gas: 3000000
+       }, function(e, contract){
+           if (e) {
+               console.log(e+" at DAOCreator creation!");
+           }
+           if (typeof contract.address != 'undefined') {
+               console.log('DAOCreator mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
+               checkWork();
+               var dao = daoContract.new(
+                   _defaultServiceProvider,
+                   contract.address,""")
+        f.write("""
+                   {},
+                   {}""".format(str(self.min_value), str(self.closing_time)))
+        f.write(""",
+            {
+                from: web3.eth.accounts[0],
+                data: '""")
+        f.write(dbin)
+        f.write(
+            """',
             gas: 3000000,
             gasPrice: 500000000000
    }, function(e, contract){
@@ -168,8 +171,10 @@ gas: 3000000
    });
 checkWork();
 
-console.log("mining contract, please wait");""")
+console.log("mining contract, please wait");"""
+        )
 
+g_ctx = None
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description='DAO contracts test helper')
@@ -178,10 +183,22 @@ if __name__ == "__main__":
         help='Full path to the solc binary'
     )
     p.add_argument('--clean-chain', action='store_true')
+    p.add_argument(
+        '--closing-time',
+        type=int,
+        help='Number of minutes from now when the newly created DAO sale ends',
+        default=120
+    )
+    p.add_argument(
+        '--min-value',
+        type=int,
+        help='Minimum value to consider the DAO crowdfunded',
+        default=20
+    )
     args = p.parse_args()
 
     # Initialize the test support context
     g_ctx = TestContext(args)
 
     dabi, dbin, cabi, cbin = g_ctx.compile_contracts()
-    create_deploy_js(dabi, dbin, cabi, cbin)
+    g_ctx.create_deploy_js(dabi, dbin, cabi, cbin)

@@ -45,12 +45,12 @@ along with the DAO. See LICENSE.
 Basic Token Sale contract for crowd funding. 
 
 ##### DAO.sol:
-Generic contract for a decentralized autonomous organisation to decide how to use the raised funds. 
+Generic contract for a decentralized autonomous organization to decide how to use the raised funds. 
 
 ##### Token.sol: 
-Most, basic default, standardised Token contract
+Most, basic default, standardized Token contract
 Original taken from [ConsenSys](https://github.com/ConsenSys/Tokens/blob/master/Token_Contracts/contracts/Standard_Token.sol)
-which is based on [standardised APIs](https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs)
+which is based on [standardized APIs](https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs)
 
 #### DAO interactions
 The following contracts interact with the DAO
@@ -67,5 +67,5 @@ The following contracts interact with the DAO
 TBD
 
 ## Contact
-[slack](https://slockit.slack.com/messages/dao/)
+Please contact us on [slack](https://slockit.slack.com/messages/dao/)
 

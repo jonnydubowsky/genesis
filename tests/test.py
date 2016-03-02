@@ -8,12 +8,9 @@ import os
 import json
 import subprocess
 import shutil
+import sys
 from datetime import datetime
 datetime.utcnow()
-
-g_tests_dir = os.path.dirname(os.path.realpath(__file__))
-g_contracts_dir = os.path.dirname(g_tests_dir)
-g_solc = None
 
 
 def is_exe(fpath):
@@ -31,7 +28,6 @@ def which(program):
             exe_file = os.path.join(path, program)
             if is_exe(exe_file):
                 return exe_file
-
     return None
 
 
@@ -46,42 +42,53 @@ def get_solc(given_solc):
     return None
 
 
-def clean_blockchain():
-    """Clean all blockchain data directories apart from the keystore"""
-    print("Cleaning blockchain data directory ...")
-    data_dir = os.path.join(g_tests_dir, "data")
-    print("Going in clean with dataDir: {}".format(data_dir))
-    shutil.rmtree(os.path.join(data_dir, "chaindata"), ignore_errors=True)
-    shutil.rmtree(os.path.join(data_dir, "dapp"), ignore_errors=True)
-    try:
-        os.remove(os.path.join(data_dir, "nodekey"))
-    except OSError:
-        pass
+class TestContext():
+    def __init__(self, args):
+        self.tests_dir = os.path.dirname(os.path.realpath(__file__))
+        self.contracts_dir = os.path.dirname(self.tests_dir)
+        self.solc = get_solc(args.solc)
+        if args.clean_chain:
+            self.clean_blockchain()
 
+    def clean_blockchain(self):
+        """Clean all blockchain data directories apart from the keystore"""
+        print("Cleaning blockchain data directory ...")
+        data_dir = os.path.join(self.tests_dir, "data")
+        shutil.rmtree(os.path.join(data_dir, "chaindata"), ignore_errors=True)
+        shutil.rmtree(os.path.join(data_dir, "dapp"), ignore_errors=True)
+        try:
+            os.remove(os.path.join(data_dir, "nodekey"))
+        except OSError:
+            pass
 
-def compile_contracts(solc):
-    print("Compiling the DAO contract...")
+    def compile_contracts(self):
+        if not self.solc:
+            print("No valid solc compiler provided")
+            sys.exit(1)
+        print("Compiling the DAO contract...")
 
-    dao_contract = os.path.join(g_contracts_dir, "DAO.sol")
-    if not os.path.isfile(dao_contract):
-        print("DAO contract not found at {}".format(dao_contract))
+        dao_contract = os.path.join(self.contracts_dir, "DAO.sol")
+        if not os.path.isfile(dao_contract):
+            print("DAO contract not found at {}".format(dao_contract))
 
-    if not os.path.isfile(solc):
-        print("Could not find solidity solc binary at {}".format(solc))
+        data = subprocess.check_output([
+            self.solc,
+            os.path.join(self.contracts_dir, "DAO.sol"),
+            "--optimize",
+            "--combined-json",
+            "abi,bin"
+        ])
+        res = json.loads(data)
+        contract = res["contracts"]["DAO"]
+        DAOCreator = res["contracts"]["DAO_Creator"]
+        return (
+            contract["abi"],
+            contract["bin"],
+            DAOCreator["abi"],
+            DAOCreator["bin"]
+        )
 
-    data = subprocess.check_output([
-        solc,
-        os.path.join(g_contracts_dir, "DAO.sol"),
-        "--optimize",
-        "--combined-json",
-        "abi,bin"
-    ])
-    res = json.loads(data)
-    contract = res["contracts"]["DAO"]
-    DAOCreator = res["contracts"]["DAO_Creator"]
-    return (
-        contract["abi"], contract["bin"], DAOCreator["abi"], DAOCreator["bin"]
-    )
+g_ctx = None
 
 
 def create_deploy_js(dabi, dbin, cabi, cbin):
@@ -173,11 +180,8 @@ if __name__ == "__main__":
     p.add_argument('--clean-chain', action='store_true')
     args = p.parse_args()
 
-    # determine solc
-    g_solc = get_solc(args.solc)
-    # before anything, if asked for it, let's clean the test chain
-    if args.clean_chain:
-        clean_blockchain()
+    # Initialize the test support context
+    g_ctx = TestContext(args)
 
-    dabi, dbin, cabi, cbin = compile_contracts(args.solc)
+    dabi, dbin, cabi, cbin = g_ctx.compile_contracts()
     create_deploy_js(dabi, dbin, cabi, cbin)

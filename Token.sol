@@ -26,6 +26,7 @@ which is itself based on the Ethereum standardized contract APIs: https://github
 
 /// @title Standard Token Contract.
 
+
 contract TokenInterface {
 
     mapping (address => uint256) balances;
@@ -65,6 +66,7 @@ contract TokenInterface {
     event Transfer(address indexed _from, address indexed _to, uint256 _amount);
     event Approval(address indexed _owner, address indexed _spender, uint256 _amount);
 }
+
 
 contract Token is TokenInterface {
 
@@ -111,4 +113,5 @@ contract Token is TokenInterface {
     function allowance(address _owner, address _spender) constant returns (uint256 remaining) {
         return allowed[_owner][_spender];
     }
+
 }

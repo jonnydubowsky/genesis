@@ -1,0 +1,5 @@
+# Tests related files
+tests/data/chaindata/
+tests/data/dapp/
+tests/data/nodekey
+tests/out.log.geth

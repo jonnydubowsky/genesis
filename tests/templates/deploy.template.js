@@ -41,24 +41,25 @@ var _daoCreatorContract = creatorContract.new(
 	if (typeof contract.address != 'undefined') {
 	    console.log('dao_creator_address: ' + contract.address);
             checkWork();
-            var dao = daoContract.new(
-		_defaultServiceProvider,
-		contract.address,
-		$min_value,
-		$closing_time,
-		{
-		    from: web3.eth.accounts[0],
-		    data: '$dao_bin',
-		    gas: 3000000,
-		    gasPrice: 500000000000
-		}, function (e, contract) {
-		    // funny thing, without this geth hangs
-		    console.log("At DAO creation callback");
-		    if (typeof contract.address != 'undefined') {
-			console.log('dao_address: ' + contract.address);
-		    }
-		});
-            checkWork();
+        var dao = daoContract.new(
+		    _defaultServiceProvider,
+		    contract.address,
+		    $min_value,
+		    $closing_time,
+            0,
+		    {
+		        from: web3.eth.accounts[0],
+		        data: '$dao_bin',
+		        gas: 3000000,
+		        gasPrice: 500000000000
+		    }, function (e, contract) {
+		        // funny thing, without this geth hangs
+		        console.log("At DAO creation callback");
+		        if (typeof contract.address != 'undefined') {
+			        console.log('dao_address: ' + contract.address);
+		        }
+		    });
+        checkWork();
 	}
     });
 checkWork();

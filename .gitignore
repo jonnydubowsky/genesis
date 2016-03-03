@@ -6,3 +6,4 @@ tests/out.log.geth
 
 # Ignore created javascript files
 tests/deploy.js
+tests/fund.js

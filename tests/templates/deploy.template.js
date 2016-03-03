@@ -7,14 +7,6 @@ personal.unlockAccount(
 );
 
 function checkWork() {
-    if (!eth.mining) {
-       setTimeout(function() {
-            miner.stop(0);
-        }, 3000);
-        miner.start(1);
-    } else {
-        miner.stop(0);
-    }
     if (eth.getBlock("pending").transactions.length > 0) {
         if (eth.mining) return;
         console.log("== Pending transactions! Mining...");

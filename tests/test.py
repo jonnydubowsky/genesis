@@ -280,8 +280,19 @@ if __name__ == "__main__":
         '--geth',
         help='Full path to the geth binary to use'
     )
-    p.add_argument('--clean-chain', action='store_true')
-    p.add_argument('--verbose', action='store_true')
+    p.add_argument(
+        '--clean-chain',
+        action='store_true',
+        help=(
+            'If given then the blockchain is deleted before any '
+            'test scenario is executed'
+        )
+    )
+    p.add_argument(
+        '--verbose',
+        action='store_true',
+        help='If given then all test checks are printed in the console'
+    )
     p.add_argument(
         '--closing-time',
         type=int,

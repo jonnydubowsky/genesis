@@ -107,6 +107,10 @@ class TestContext():
             os.remove(os.path.join(data_dir, "nodekey"))
         except OSError:
             pass
+        try:
+            os.remove(os.path.join(data_dir, "saved"))
+        except OSError:
+            pass
 
     def test_results(self, testname):
         if self.tests_ok:

@@ -31,14 +31,17 @@ def which(program):
     return None
 
 
-def get_solc(given_solc):
-    """Determines path to solc we will be using"""
-    if given_solc:
-        if is_exe(given_solc):
-            return given_solc
+def determine_binary(given_binary, name):
+    """
+    Determines if a path to a binary is correct and if not tries to
+    get a generic one by looking at the system PATH
+    """
+    if given_binary:
+        if is_exe(given_binary):
+            return given_binary
     else:
-        # try to find solc in the PATH
-        return which("solc")
+        # try to find binary in the PATH
+        return which(name)
     return None
 
 
@@ -46,7 +49,8 @@ class TestContext():
     def __init__(self, args):
         self.tests_dir = os.path.dirname(os.path.realpath(__file__))
         self.contracts_dir = os.path.dirname(self.tests_dir)
-        self.solc = get_solc(args.solc)
+        self.solc = determine_binary(args.solc, 'solc')
+        self.geth = determine_binary(args.geth, 'geth')
         if args.clean_chain:
             self.clean_blockchain()
         self.closing_time = (
@@ -54,6 +58,10 @@ class TestContext():
             args.closing_time * 60
         )
         self.min_value = args.min_value
+        self.test_scenarios = {
+            'none': self.run_test_none,
+            'deploy': self.run_test_deploy
+        }
 
     def clean_blockchain(self):
         """Clean all blockchain data directories apart from the keystore"""
@@ -68,7 +76,7 @@ class TestContext():
 
     def compile_contracts(self):
         if not self.solc:
-            print("No valid solc compiler provided")
+            print("Error: No valid solc compiler provided")
             sys.exit(1)
         print("Compiling the DAO contract...")
 
@@ -113,14 +121,14 @@ function checkWork() {
     } else {
         miner.stop(0);
     }
-   // if (eth.getBlock("pending").transactions.length > 0) {
-   //     if (eth.mining) return;
-   //     console.log("== Pending transactions! Mining...");
-   //     miner.start(1);
-   // } else {
-   //     miner.stop(0);  // This param means nothing
-   //     console.log("== No transactions! Mining stopped.");
-   // }
+    if (eth.getBlock("pending").transactions.length > 0) {
+        if (eth.mining) return;
+        console.log("== Pending transactions! Mining...");
+        miner.start(1);
+    } else {
+        miner.stop(0);  // This param means nothing
+        console.log("== No transactions! Mining stopped.");
+    }
 }
 
 var _defaultServiceProvider = web3.eth.accounts[0];
@@ -174,13 +182,48 @@ checkWork();
 console.log("mining contract, please wait");"""
         )
 
+    def run_test_deploy(self):
+        print("Running the Deploy Test Scenario")
+        dabi, dbin, cabi, cbin = g_ctx.compile_contracts()
+        g_ctx.create_deploy_js(dabi, dbin, cabi, cbin)
+        output = subprocess.check_output([
+            self.geth,
+            "--networkid",
+            "123",
+            "--nodiscover",
+            "--maxpeers",
+            "0",
+            "--genesis",
+            "./genesis_block.json",
+            "--datadir",
+            "./data",
+            "--verbosity",
+            "0",
+            "js",
+            "deploy.js"
+        ])
+        print(output)
+
+    def run_test_none(self):
+        print("No test scenario provided.")
+
+    def run_test(self, args):
+        if not self.geth:
+            print("Error: No valid geth binary provided/found")
+            sys.exit(1)
+        self.test_scenarios[args.scenario]()
+
 g_ctx = None
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description='DAO contracts test helper')
     p.add_argument(
         '--solc',
-        help='Full path to the solc binary'
+        help='Full path to the solc binary to use'
+    )
+    p.add_argument(
+        '--geth',
+        help='Full path to the geth binary to use'
     )
     p.add_argument('--clean-chain', action='store_true')
     p.add_argument(
@@ -195,10 +238,14 @@ if __name__ == "__main__":
         help='Minimum value to consider the DAO crowdfunded',
         default=20
     )
+    p.add_argument(
+        '--scenario',
+        choices=['none', 'deploy'],
+        default='none',
+        help='Test scenario to play out'
+    )
     args = p.parse_args()
 
     # Initialize the test support context
     g_ctx = TestContext(args)
-
-    dabi, dbin, cabi, cbin = g_ctx.compile_contracts()
-    g_ctx.create_deploy_js(dabi, dbin, cabi, cbin)
+    g_ctx.run_test(args)

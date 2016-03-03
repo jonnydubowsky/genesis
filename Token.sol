@@ -18,6 +18,7 @@ along with the DAO.  If not, see <http://www.gnu.org/licenses/>.
 
 /*
 The most basic, standardized Token contract. No "pre-mine". Tokens need to be created by a derived contract (e.g. TokenSale.sol)
+Defines the functions to check token balances, send tokens, send tokens on behalf of a 3rd party and its corresponding approval process.
 
 Original taken from https://github.com/ConsenSys/Tokens/blob/master/Token_Contracts/contracts/Standard_Token.sol
 which is itself based on the Ethereum standardized contract APIs: https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs
@@ -65,11 +66,13 @@ contract TokenInterface {
 
     event Transfer(address indexed _from, address indexed _to, uint256 _amount);
     event Approval(address indexed _owner, address indexed _spender, uint256 _amount);
+
 }
 
 
 contract Token is TokenInterface {
 
+    // protects users by preventing the execution of method calls that inadvertently also transfered ether
     modifier noEther() {if (msg.value > 0) throw; _}
 
 

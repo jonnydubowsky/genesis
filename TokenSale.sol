@@ -28,6 +28,8 @@ contract TokenSaleInterface {
     uint public minValue;                      // minimal goal of token sale
     bool public funded;                        // true if project is funded, false otherwise
 
+    address public privateSale;                // used for DAO splits - if it is 0, then it is a public sale, otherwise, only this address is allowed to buy tokens
+
     /// @dev Constructor setting the minimal target and the end of the Token Sale
     /// @param _minValue Minimal value for a successful Token Sale
     /// @param _closingTime Date (in unix time) of the end of the Token Sale
@@ -47,14 +49,15 @@ contract TokenSaleInterface {
 
 contract TokenSale is TokenSaleInterface, Token {
 
-    function TokenSale(uint _minValue, uint _closingTime) {
+    function TokenSale(uint _minValue, uint _closingTime, address _privateSale) {
         closingTime = _closingTime;
         minValue = _minValue;
+        privateSale = _privateSale;
     }
 
 
     function buyTokenProxy(address _tokenHolder) returns (bool success) {
-        if (now < closingTime && msg.value > 0) {
+        if (now < closingTime && msg.value > 0 && (privateSale == 0 || privateSale == msg.sender)) {
             uint token = msg.value;
             balances[_tokenHolder] += token;
             totalSupply += token;

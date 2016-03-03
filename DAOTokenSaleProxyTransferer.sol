@@ -19,7 +19,8 @@ along with the DAO.  If not, see <http://www.gnu.org/licenses/>.
 /* 
 By default, token purchases can be executed on behalf of another address using the TokenSale.sol buyTokenProxy() function
 This contract is used as a fall back in case an exchange doesn't implement the "add data to a transaction" feature in a timely manner, preventing it from calling buyTokenProxy().
-A unique instance of such a contract would have to be deployed per exchange.
+Calling this contract automatically triggers a call to buyTokenProxy() using the correct parameters for a given participant in the token sale.  
+A unique instance of such a contract would have to be deployed per participant, usually using a middleware layer on a webserver, for example.
 */
 
 

@@ -3,7 +3,11 @@ tests/data/chaindata/
 tests/data/dapp/
 tests/data/nodekey
 tests/data/history
+
+# Tests save files and output
+tests/data/saved
 tests/out.log.geth
+
 
 # Ignore created javascript files
 tests/deploy.js

@@ -65,6 +65,7 @@ class TestContext():
         self.tests_ok = True
         self.dao_addr = None
         self.tests_dir = os.path.dirname(os.path.realpath(__file__))
+        self.save_file = os.path.join(self.tests_dir, "data", "saved")
         self.templates_dir = os.path.join(self.tests_dir, 'templates')
         self.contracts_dir = os.path.dirname(self.tests_dir)
         self.solc = determine_binary(args.solc, 'solc')
@@ -72,6 +73,9 @@ class TestContext():
         self.verbose = args.verbose
         if args.clean_chain:
             self.clean_blockchain()
+        else:
+            self.attemptLoad()
+
         self.closing_time = seconds_in_future(args.closing_time * 60)
         self.min_value = args.min_value
         self.test_scenarios = {
@@ -79,6 +83,19 @@ class TestContext():
             'deploy': self.run_test_deploy,
             'fund': self.run_test_fund,
         }
+
+    def attemptLoad(self):
+        """
+        If there is a saved file, then attempt to load DAO data from there
+        """
+        if os.path.isfile(self.save_file):
+            print("Loading DAO from a saved file...")
+            with open(self.save_file, 'r') as f:
+                data = json.loads(f.read())
+            self.dao_addr = data['dao_addr']
+            self.dao_creator_addr = data['dao_creator_addr']
+            print("Loaded dao_addr: {}".format(self.dao_addr))
+            print("Loaded dao_creator_addr: {}".format(self.dao_creator_addr))
 
     def clean_blockchain(self):
         """Clean all blockchain data directories apart from the keystore"""
@@ -186,6 +203,11 @@ class TestContext():
         self.dao_addr = m.group('dao_address')
         print("DAO Creator address is: {}".format(self.dao_creator_addr))
         print("DAO address is: {}".format(self.dao_addr))
+        with open(self.save_file, "w") as f:
+            f.write(json.dumps({
+                "dao_creator_addr": self.dao_creator_addr,
+                "dao_addr": self.dao_addr
+            }))
 
     def create_fund_js(self, waitsecs, amounts):
         print("Creating 'fund.js'...")

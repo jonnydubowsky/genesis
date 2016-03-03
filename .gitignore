@@ -1,5 +1,8 @@
-# Tests related files
+# Tests related chain files
 tests/data/chaindata/
 tests/data/dapp/
 tests/data/nodekey
 tests/out.log.geth
+
+# Ignore created javascript files
+tests/deploy.js

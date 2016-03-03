@@ -20,12 +20,10 @@ along with the DAO.  If not, see <http://www.gnu.org/licenses/>.
 Token Sale contract
 */
 
-
 import "./Token.sol";
 
 
 contract TokenSaleInterface {
-
     uint public closingTime;                   // end of token sale, in Unix time
     uint public minValue;                      // minimum funding goal of the token sale, denominated in tokens
     bool public isFunded;                      // true if DAO has reached its minimum funding goal, false otherwise
@@ -47,18 +45,15 @@ contract TokenSaleInterface {
     event FundingToDate(uint value);
     event SoldToken(address indexed to, uint amount);
     event Refund(address indexed to, uint value);
-
 }
 
 
 contract TokenSale is TokenSaleInterface, Token {
-
     function TokenSale(uint _minValue, uint _closingTime, address _privateSale) {
         closingTime = _closingTime;
         minValue = _minValue;
         privateSale = _privateSale;
     }
-
 
     function buyTokenProxy(address _tokenHolder) returns (bool success) {
         if (now < closingTime && msg.value > 0 && (privateSale == 0 || privateSale == msg.sender)) {
@@ -75,7 +70,6 @@ contract TokenSale is TokenSaleInterface, Token {
         throw;
     }
 
-
     function refund() noEther {
         if (now > closingTime
             && !isFunded
@@ -86,5 +80,4 @@ contract TokenSale is TokenSaleInterface, Token {
             balances[msg.sender] = 0;
         }
     }
-
 }

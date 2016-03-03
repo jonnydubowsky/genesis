@@ -17,7 +17,7 @@ along with the DAO.  If not, see <http://www.gnu.org/licenses/>.
 
 
 /*
-Token Sale contract
+Token Sale contract, used by the DAO to raise its funding goal
 */
 
 import "./Token.sol";

@@ -17,7 +17,7 @@ along with the DAO.  If not, see <http://www.gnu.org/licenses/>.
 
 
 /* 
-Generic contract for a decentralized autonomous organisation to manage a trust
+Generic contract for a Decentralized Autonomous Organisation (DAO) to manage a trust
 */
 
 import "./TokenSale.sol";
@@ -47,7 +47,7 @@ contract DAOInterface {
     uint public totalRewardToken;
 
     // account used to manage the rewards which are to be distributed to the
-    // DAO Token Holders (and reward token holders) seperately, so they don't appear in `this.balance`
+    // DAO Token Holders (and reward token holders) separately, so they don't appear in `this.balance`
     ManagedAccount public rewardAccount;
     // amount of wei already payed out to a certain member address
     mapping (address => uint) public payedOut;

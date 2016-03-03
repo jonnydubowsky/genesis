@@ -41,16 +41,16 @@ along with the DAO. See LICENSE.
 
 ### Solidity files
 #### DAO
-##### TokenSale.sol: 
-Basic Token Sale contract for crowd funding. 
 
 ##### DAO.sol:
 Generic contract for a decentralized autonomous organization to decide how to use the raised funds. 
 
 ##### Token.sol: 
-Most, basic default, standardized Token contract
-Original taken from [ConsenSys](https://github.com/ConsenSys/Tokens/blob/master/Token_Contracts/contracts/Standard_Token.sol)
-which is based on [standardized APIs](https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs)
+The most basic, standardized Token contract. No "pre-mine". Tokens need to be created by a derived contract (e.g. TokenSale.sol)
+Defines the functions to check token balances, send tokens, send tokens on behalf of a 3rd party and its corresponding approval process.
+
+##### TokenSale.sol: 
+Basic Token Sale contract for crowd funding. 
 
 #### DAO interactions
 The following contracts interact with the DAO

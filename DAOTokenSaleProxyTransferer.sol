@@ -17,13 +17,16 @@ along with the DAO.  If not, see <http://www.gnu.org/licenses/>.
 
 
 /* 
-Basic proxy contract which transfers all the value to the DAO by calling its buyTokenProxy-Function.
-This allows Exchanges to simply transfer money to an address which then will be forwarded to the DAO
+By default, token purchases can be executed on behalf of another address using the TokenSale.sol buyTokenProxy() function
+This contract is used as a fall back in case an exchange doesn't implement the "add data to a transaction" feature in a timely manner, preventing it from calling buyTokenProxy().
+A unique instance of such a contract would have to be deployed per exchange.
 */
+
 
 import "./TokenSale.sol";
 
 contract DAOTokenSaleProxyTransferer {
+
     address public owner;
     address public dao;
 
@@ -48,4 +51,5 @@ contract DAOTokenSaleProxyTransferer {
         if (now > funding.closingTime() || !funding.buyTokenProxy.value(this.balance)(owner))
            owner.send(this.balance);
     }
+
 }

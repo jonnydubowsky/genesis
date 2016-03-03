@@ -1,6 +1,5 @@
 # The DAO
 
-
 ## What is it? 
 A generic DAO (Decentralized Autonomous Organization) written in Solidity to run on the Ethereum block chain. 
 Simple, decentralized and 100% secure.
@@ -39,32 +38,26 @@ A copy of the GNU lesser General Public License is included
 along with the DAO. See LICENSE.
 
 
-### Solidity files
-#### DAO
+## Solidity files
 
-##### DAO.sol:
-Generic contract for a decentralized autonomous organization to decide how to use the raised funds. 
+### DAO.sol:
+Generic contract for a Decentralized Autonomous Organisation (DAO) to manage a trust
 
-##### Token.sol: 
-The most basic, standardized Token contract. No "pre-mine". Tokens need to be created by a derived contract (e.g. TokenSale.sol)
+### Token.sol: 
 Defines the functions to check token balances, send tokens, send tokens on behalf of a 3rd party and its corresponding approval process.
 
-##### TokenSale.sol: 
-Basic Token Sale contract for crowd funding. 
+#### TokenSale.sol: 
+Token Sale contract, used by the DAO to raise its funding goal
 
-#### DAO interactions
-The following contracts interact with the DAO
+### SampleOffer.sol
+Sample Proposal from a Service Provider to the DAO
 
-#####SampleOffer.sol
+### ManagedAccount.sol
+Basic account, managed by another contract
 
-#####ManagedAccount.sol
+### DAOTokenSaleProxyTransferer.sol
+This contract is used as a fall back in case an exchange doesn't implement the "add data to a transaction" feature in a timely manner, preventing it from calling buyTokenProxy().
 
-#### Boiler Plate
-
-#####DAOTokenSaleProxyTransferer.sol
-
-## Deployments
-TBD
 
 ## Contact
 Please contact us on [slack](https://slockit.slack.com/messages/dao/)

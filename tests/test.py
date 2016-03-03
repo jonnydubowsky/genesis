@@ -12,6 +12,7 @@ import sys
 import calendar
 from datetime import datetime
 from string import Template
+import re
 
 
 def is_exe(fpath):
@@ -49,6 +50,7 @@ def determine_binary(given_binary, name):
 class TestContext():
     def __init__(self, args):
         self.tests_dir = os.path.dirname(os.path.realpath(__file__))
+        self.templates_dir = os.path.join(self.tests_dir, 'templates')
         self.contracts_dir = os.path.dirname(self.tests_dir)
         self.solc = determine_binary(args.solc, 'solc')
         self.geth = determine_binary(args.geth, 'geth')
@@ -104,9 +106,8 @@ class TestContext():
 
     def create_deploy_js(self, dabi, dbin, cabi, cbin):
         print("Rewritting deploy.js using the compiled contract...")
-        with open(os.path.join(self.tests_dir, 'templates', 'deploy.template.js'), 'r') as f:
+        with open(os.path.join(self.templates_dir, 'deploy.template.js'), 'r') as f:
             data = f.read()
-            # data = f.read().replace('\n', '')
         tmpl = Template(data)
         s = tmpl.substitute(
             dao_abi=dabi,
@@ -139,7 +140,21 @@ class TestContext():
             "js",
             "deploy.js"
         ])
-        print(output)
+
+        r = re.compile(
+            'dao_creator_address: (?P<dao_creator_address>.*?)\n.*?dao_address'
+            ': (?P<dao_address>.*?)\n',
+            flags=re.MULTILINE | re.DOTALL
+        )
+        m = r.search(output)
+        if not m:
+            print("Error: Could not find addresses in the deploy output.")
+            sys.exit(1)
+
+        self.dao_creator_addr = m.group('dao_creator_address')
+        self.dao_addr = m.group('dao_address')
+        print("DAO Creator address is: {}".format(self.dao_creator_addr))
+        print("DAO address is: {}".format(self.dao_addr))
 
     def run_test_none(self):
         print("No test scenario provided.")

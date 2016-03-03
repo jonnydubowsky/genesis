@@ -39,10 +39,7 @@ var _daoCreatorContract = creatorContract.new(
             console.log(e+" at DAOCreator creation!");
 	}
 	if (typeof contract.address != 'undefined') {
-            console.log(
-		'DAOCreator mined! address: ' + contract.address +
-		    ' transactionHash: ' + contract.transactionHash
-	    );
+	    console.log('dao_creator_address: ' + contract.address);
             checkWork();
             var dao = daoContract.new(
 		_defaultServiceProvider,
@@ -58,10 +55,7 @@ var _daoCreatorContract = creatorContract.new(
 		    // funny thing, without this geth hangs
 		    console.log("At DAO creation callback");
 		    if (typeof contract.address != 'undefined') {
-			console.log('DAO Contract mined! address: ' +
-				    contract.address + ' transactionHash: ' +
-				    contract.transactionHash
-				   );
+			console.log('dao_address: ' + contract.address);
 		    }
 		});
             checkWork();

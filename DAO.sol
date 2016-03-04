@@ -50,7 +50,7 @@ contract DAOInterface {
     // DAO Token Holders (and reward token holders) separately, so they don't appear in `this.balance`
     ManagedAccount public rewardAccount;
     // amount of wei already payed out to a certain member address
-    mapping (address => uint) public payedOut;
+    mapping (address => uint) public paidOut;
 
     // deposit in wei to be held for each proposal
     uint public proposalDeposit;
@@ -109,7 +109,7 @@ contract DAOInterface {
         address voter;
     }
 
-    modifier onlyShareholders {}
+    modifier onlyTokenholders {}
 
     /// @dev Constructor setting the default service provider and the address for the contract able
     ///      to create another DAO as well as the parameters for the DAO Token Sale
@@ -135,7 +135,7 @@ contract DAOInterface {
     /// @param _debatingPeriod The time used for debating the proposal, at least 2 weeks.
     /// @param _newServiceProvider A bool defining whether this proposal is about a new service provider or not
     /// @return The proposal ID. Needed for voting on the proposal
-    function newProposal(address _recipient, uint _amount, string _description, bytes _transactionBytecode, uint _debatingPeriod, bool _newServiceProvider) onlyShareholders returns (uint _proposalID);
+    function newProposal(address _recipient, uint _amount, string _description, bytes _transactionBytecode, uint _debatingPeriod, bool _newServiceProvider) onlyTokenholders returns (uint _proposalID);
 
     /// @notice Check that the proposal with the ID `_proposalID` matches a transaction which sends `_amount` with data `_transactionBytecode` to `_recipient`
     /// @param _proposalID The proposal ID
@@ -149,7 +149,7 @@ contract DAOInterface {
     /// @param _proposalID The proposal ID
     /// @param _supportsProposal Yes/No - support of the proposal
     /// @return The vote ID.
-    function vote(uint _proposalID, bool _supportsProposal) onlyShareholders returns (uint _voteID);
+    function vote(uint _proposalID, bool _supportsProposal) onlyTokenholders returns (uint _voteID);
 
     /// @notice Checks whether proposal `_proposalID` with transaction data `_transactionBytecode` has been voted for or rejected,
     ///         and executes the transaction in the case it has been voted for.
@@ -192,7 +192,7 @@ contract DAOInterface {
 contract DAO is DAOInterface, Token, TokenSale {
 
     // modifier that allows only shareholders to vote and create new proposals
-    modifier onlyShareholders {
+    modifier onlyTokenholders {
         if (balanceOf(msg.sender) == 0) throw;
             _
     }
@@ -225,7 +225,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function newProposal(address _recipient, uint _amount, string _description, bytes _transactionBytecode, uint _debatingPeriod, bool _newServiceProvider) onlyShareholders returns (uint _proposalID){
+    function newProposal(address _recipient, uint _amount, string _description, bytes _transactionBytecode, uint _debatingPeriod, bool _newServiceProvider) onlyTokenholders returns (uint _proposalID){
         // check sanity
         if (_newServiceProvider && (_amount != 0 || _transactionBytecode.length != 0 || _recipient == serviceProvider || msg.value > 0 || _debatingPeriod < 1 weeks)) {
             throw;
@@ -260,7 +260,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function vote(uint _proposalID, bool _supportsProposal) onlyShareholders noEther returns (uint _voteID) {
+    function vote(uint _proposalID, bool _supportsProposal) onlyTokenholders noEther returns (uint _voteID) {
         Proposal p = proposals[_proposalID];
         if (p.voted[msg.sender] || now >= p.votingDeadline) throw;
 
@@ -325,7 +325,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function confirmNewServiceProvider(uint _proposalID, address _newServiceProvider) noEther onlyShareholders returns (bool _success) {
+    function confirmNewServiceProvider(uint _proposalID, address _newServiceProvider) noEther onlyTokenholders returns (bool _success) {
         Proposal p = proposals[_proposalID];
 
         // sanity check
@@ -366,16 +366,16 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function getMyReward() noEther external {
-        // my share of the rewardToken of this DAO, or when called by a split child DAO, their portion of the rewardToken.
-        uint myShareOfTheReward = (balanceOf(msg.sender) * rewardToken[address(this)]) / totalSupply + rewardToken[msg.sender];
-        uint myReward = (myShareOfTheReward * rewardAccount.accumulatedInput()) / totalRewardToken - payedOut[msg.sender];
+        // my portion of the rewardToken of this DAO, or when called by a split child DAO, their portion of the rewardToken.
+        uint myPortionOfTheReward = (balanceOf(msg.sender) * rewardToken[address(this)]) / totalSupply + rewardToken[msg.sender];
+        uint myReward = (myPortionOfTheReward * rewardAccount.accumulatedInput()) / totalRewardToken - paidOut[msg.sender];
         if (!rewardAccount.payOut(msg.sender, myReward)) throw;
-        payedOut[msg.sender] += myReward;
+        paidOut[msg.sender] += myReward;
     }
 
 
     function transfer(address _to, uint256 _value) returns (bool success) {
-        if (isFunded && now > closingTime && transferPayedOut(msg.sender, _to, _value) && super.transfer(_to, _value)){
+        if (isFunded && now > closingTime && transferpaidOut(msg.sender, _to, _value) && super.transfer(_to, _value)){
             return true;
         }
         else throw;
@@ -383,18 +383,18 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-        if (isFunded && now > closingTime && transferPayedOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)){
+        if (isFunded && now > closingTime && transferpaidOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)){
             return true;
         }
         else throw;
     }
 
 
-    function transferPayedOut(address _from, address _to, uint256 _value) internal returns (bool success){
-        uint transferPayedOut = payedOut[_from] * _value / balanceOf(_from);
-        if (transferPayedOut > payedOut[_from]) throw;
-        payedOut[_from] -= transferPayedOut;
-        payedOut[_to] += transferPayedOut;
+    function transferpaidOut(address _from, address _to, uint256 _value) internal returns (bool success){
+        uint transferpaidOut = paidOut[_from] * _value / balanceOf(_from);
+        if (transferpaidOut > paidOut[_from]) throw;
+        paidOut[_from] -= transferpaidOut;
+        paidOut[_to] += transferpaidOut;
         return true;
     }
 

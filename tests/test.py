@@ -28,6 +28,13 @@ def is_exe(fpath):
     return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
 
+def rm_file(f):
+    try:
+        os.remove(f)
+    except OSError:
+        pass
+
+
 def which(program):
     fpath, fname = os.path.split(program)
     if fpath:
@@ -68,7 +75,8 @@ def seconds_in_future(secs):
 class TestContext():
     def __init__(self, args):
         self.tests_ok = True
-        self.dao_addr = None  # check this to determine if deployment occured
+        self.dao_addr = None  # check to determine if DAO is deployed
+        self.offer_addr = None  # check to determine if offer is deployed
         self.tests_dir = os.path.dirname(os.path.realpath(__file__))
         self.save_file = os.path.join(self.tests_dir, "data", "saved")
         self.templates_dir = os.path.join(self.tests_dir, 'templates')
@@ -111,14 +119,8 @@ class TestContext():
         data_dir = os.path.join(self.tests_dir, "data")
         shutil.rmtree(os.path.join(data_dir, "chaindata"), ignore_errors=True)
         shutil.rmtree(os.path.join(data_dir, "dapp"), ignore_errors=True)
-        try:
-            os.remove(os.path.join(data_dir, "nodekey"))
-        except OSError:
-            pass
-        try:
-            os.remove(os.path.join(data_dir, "saved"))
-        except OSError:
-            pass
+        rm_file(os.path.join(data_dir, "nodekey"))
+        rm_file(os.path.join(data_dir, "saved"))
 
     def test_results(self, testname):
         if self.tests_ok:
@@ -155,30 +157,54 @@ class TestContext():
             script
         ])
 
-    def compile_contracts(self):
-        if not self.solc:
-            print("Error: No valid solc compiler provided")
-            sys.exit(1)
-        print("Compiling the DAO contract...")
-
-        dao_contract = os.path.join(self.contracts_dir, "DAO.sol")
-        if not os.path.isfile(dao_contract):
-            print("DAO contract not found at {}".format(dao_contract))
-
+    def compile_contract(self, contract_path):
+        print("    Compiling {}...".format(contract_path))
         data = subprocess.check_output([
             self.solc,
-            os.path.join(self.contracts_dir, "DAO.sol"),
+            contract_path,
             "--optimize",
             "--combined-json",
             "abi,bin"
         ])
-        res = json.loads(data)
+        return json.loads(data)
+
+    def compile_contracts(self, keep_limits):
+        if not self.solc:
+            print("Error: No valid solc compiler provided")
+            sys.exit(1)
+        print("Compiling the DAO contracts...")
+
+        dao_contract = os.path.join(self.contracts_dir, "DAO.sol")
+        if not os.path.isfile(dao_contract):
+            print("DAO contract not found at {}".format(dao_contract))
+            sys.exit(1)
+
+        if not keep_limits:
+            with open(dao_contract, 'r') as f:
+                contents = f.read()
+            contents = contents.replace(" || _debatingPeriod < 1 weeks", "")
+            contents = contents.replace(" || (_debatingPeriod < 2 weeks)", "")
+            new_path = os.path.join(self.contracts_dir, "DAOcopy.sol")
+            with open(new_path, "w") as f:
+                f.write(contents)
+            dao_contract = new_path
+
+        res = self.compile_contract(dao_contract)
         contract = res["contracts"]["DAO"]
         DAOCreator = res["contracts"]["DAO_Creator"]
         self.creator_abi = DAOCreator["abi"]
         self.creator_bin = DAOCreator["bin"]
         self.dao_abi = contract["abi"]
         self.dao_bin = contract["bin"]
+
+        offer = os.path.join(self.contracts_dir, "SampleOffer.sol")
+        res = self.compile_contract(offer)
+        self.offer_abi = res["contracts"]["SampleOffer"]["abi"]
+        self.offer_bin = res["contracts"]["SampleOffer"]["bin"]
+
+        if not keep_limits:
+            # also delete the temporary created file
+            rm_file(new_path)
 
     def create_deploy_js(self):
         print("Creating 'deploy.js'...")
@@ -323,11 +349,11 @@ class TestContext():
             print("Error: No valid geth binary provided/found")
             sys.exit(1)
         # All scenarios would need to have the contracts compiled
-        self.compile_contracts()
+        self.compile_contracts(args.keep_limits)
         self.test_scenarios[args.scenario]()
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser(description='DAO contracts test helper')
+    p = argparse.ArgumentParser(description='DAO contracts test framework')
     p.add_argument(
         '--solc',
         help='Full path to the solc binary to use'
@@ -335,6 +361,14 @@ if __name__ == "__main__":
     p.add_argument(
         '--geth',
         help='Full path to the geth binary to use'
+    )
+    p.add_argument(
+        '--keep-limits',
+        action='store_true',
+        help=(
+            'If given then the debate limits of the original '
+            'contracts will not be removed'
+        )
     )
     p.add_argument(
         '--clean-chain',

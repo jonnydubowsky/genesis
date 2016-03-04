@@ -34,7 +34,6 @@ contract ManagedAccount is ManagedAccountInterface{
         owner = _owner;
     }
 
-
     function(){
         accumulatedInput += msg.value;
     }

@@ -15,7 +15,7 @@ You should have received a copy of the GNU lesser General Public License
 along with the DAO.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Sample contract
+// Sample Proposal from the Service Provider to the DAO
 
 import "./DAO.sol";
 

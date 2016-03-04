@@ -17,7 +17,7 @@ along with the DAO.  If not, see <http://www.gnu.org/licenses/>.
 
 
 /* 
-Generic contract for a decentralized autonomous organisation to manage a trust
+Generic contract for a Decentralized Autonomous Organisation (DAO) to manage a trust
 */
 
 import "./TokenSale.sol";
@@ -47,7 +47,7 @@ contract DAOInterface {
     uint public totalRewardToken;
 
     // account used to manage the rewards which are to be distributed to the
-    // DAO Token Holders (and reward token holders) seperately, so they don't appear in `this.balance`
+    // DAO Token Holders (and reward token holders) separately, so they don't appear in `this.balance`
     ManagedAccount public rewardAccount;
     // amount of wei already payed out to a certain member address
     mapping (address => uint) public payedOut;
@@ -232,7 +232,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         }
         else if (!_newServiceProvider && (!isRecipientAllowed(_recipient) || (_debatingPeriod < 2 weeks))) throw;
 
-        if (!funded || now < closingTime || (msg.value < proposalDeposit && !_newServiceProvider)) throw;
+        if (!isFunded || now < closingTime || (msg.value < proposalDeposit && !_newServiceProvider)) throw;
 
         if (_recipient == address(rewardAccount) && _amount > rewards) throw;
 
@@ -375,7 +375,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transfer(address _to, uint256 _value) returns (bool success) {
-        if (funded && now > closingTime && transferPayedOut(msg.sender, _to, _value) && super.transfer(_to, _value)){
+        if (isFunded && now > closingTime && transferPayedOut(msg.sender, _to, _value) && super.transfer(_to, _value)){
             return true;
         }
         else throw;
@@ -383,7 +383,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-        if (funded && now > closingTime && transferPayedOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)){
+        if (isFunded && now > closingTime && transferPayedOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)){
             return true;
         }
         else throw;

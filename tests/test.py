@@ -3,73 +3,20 @@
 # Use test.py with any valid combination of arguments in order to run
 # DAO test scenarios
 
-import argparse
 import os
 import json
 import subprocess
 import shutil
 import sys
-import calendar
 from datetime import datetime
 from string import Template
 import re
 import random
-
-
-def constrained_sum_sample_pos(n, total):
-    """Return a randomly chosen list of n positive integers summing to total.
-    Each such list is equally likely to occur."""
-
-    dividers = sorted(random.sample(xrange(1, total), n - 1))
-    return [a - b for a, b in zip(dividers + [total], [0] + dividers)]
-
-
-def is_exe(fpath):
-    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-
-def rm_file(f):
-    try:
-        os.remove(f)
-    except OSError:
-        pass
-
-
-def which(program):
-    fpath, fname = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            path = path.strip('"')
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-    return None
-
-
-def determine_binary(given_binary, name):
-    """
-    Determines if a path to a binary is correct and if not tries to
-    get a generic one by looking at the system PATH
-    """
-    if given_binary:
-        if is_exe(given_binary):
-            return given_binary
-    else:
-        # try to find binary in the PATH
-        return which(name)
-    return None
-
-
-def ts_now():
-    """ Return a unix timestamp representing the time in UTC right now"""
-    return calendar.timegm(datetime.utcnow().utctimetuple())
-
-
-def seconds_in_future(secs):
-    return ts_now() + secs
+from utils import (
+    constrained_sum_sample_pos, rm_file,
+    determine_binary, ts_now, seconds_in_future
+)
+from args import test_args
 
 
 class TestContext():
@@ -353,56 +300,6 @@ class TestContext():
         self.test_scenarios[args.scenario]()
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser(description='DAO contracts test framework')
-    p.add_argument(
-        '--solc',
-        help='Full path to the solc binary to use'
-    )
-    p.add_argument(
-        '--geth',
-        help='Full path to the geth binary to use'
-    )
-    p.add_argument(
-        '--keep-limits',
-        action='store_true',
-        help=(
-            'If given then the debate limits of the original '
-            'contracts will not be removed'
-        )
-    )
-    p.add_argument(
-        '--clean-chain',
-        action='store_true',
-        help=(
-            'If given then the blockchain is deleted before any '
-            'test scenario is executed'
-        )
-    )
-    p.add_argument(
-        '--verbose',
-        action='store_true',
-        help='If given then all test checks are printed in the console'
-    )
-    p.add_argument(
-        '--closing-time',
-        type=int,
-        help='Number of minutes from now when the newly created DAO sale ends',
-        default=120
-    )
-    p.add_argument(
-        '--min-value',
-        type=int,
-        help='Minimum value to consider the DAO crowdfunded',
-        default=20
-    )
-    p.add_argument(
-        '--scenario',
-        choices=['none', 'deploy', 'fund'],
-        default='none',
-        help='Test scenario to play out'
-    )
-    args = p.parse_args()
-
-    # Initialize the test support context
+    args = test_args()
     ctx = TestContext(args)
     ctx.run_test(args)

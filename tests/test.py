@@ -56,14 +56,19 @@ def determine_binary(given_binary, name):
     return None
 
 
+def ts_now():
+    """ Return a unix timestamp representing the time in UTC right now"""
+    return calendar.timegm(datetime.utcnow().utctimetuple())
+
+
 def seconds_in_future(secs):
-    return calendar.timegm(datetime.utcnow().utctimetuple()) + secs
+    return ts_now() + secs
 
 
 class TestContext():
     def __init__(self, args):
         self.tests_ok = True
-        self.dao_addr = None
+        self.dao_addr = None  # check this to determine if deployment occured
         self.tests_dir = os.path.dirname(os.path.realpath(__file__))
         self.save_file = os.path.join(self.tests_dir, "data", "saved")
         self.templates_dir = os.path.join(self.tests_dir, 'templates')
@@ -71,10 +76,6 @@ class TestContext():
         self.solc = determine_binary(args.solc, 'solc')
         self.geth = determine_binary(args.geth, 'geth')
         self.verbose = args.verbose
-        if args.clean_chain:
-            self.clean_blockchain()
-        else:
-            self.attemptLoad()
 
         self.closing_time = seconds_in_future(args.closing_time * 60)
         self.min_value = args.min_value
@@ -83,6 +84,12 @@ class TestContext():
             'deploy': self.run_test_deploy,
             'fund': self.run_test_fund,
         }
+
+        # keep this at end since any data loaded should override constructor
+        if args.clean_chain:
+            self.clean_blockchain()
+        else:
+            self.attemptLoad()
 
     def attemptLoad(self):
         """
@@ -94,6 +101,7 @@ class TestContext():
                 data = json.loads(f.read())
             self.dao_addr = data['dao_addr']
             self.dao_creator_addr = data['dao_creator_addr']
+            self.closing_time = data['closing_time']
             print("Loaded dao_addr: {}".format(self.dao_addr))
             print("Loaded dao_creator_addr: {}".format(self.dao_creator_addr))
 
@@ -174,7 +182,10 @@ class TestContext():
 
     def create_deploy_js(self):
         print("Creating 'deploy.js'...")
-        with open(os.path.join(self.templates_dir, 'deploy.template.js'), 'r') as f:
+        with open(
+                os.path.join(self.templates_dir, 'deploy.template.js'),
+                'r'
+        ) as f:
             data = f.read()
         tmpl = Template(data)
         s = tmpl.substitute(
@@ -210,12 +221,16 @@ class TestContext():
         with open(self.save_file, "w") as f:
             f.write(json.dumps({
                 "dao_creator_addr": self.dao_creator_addr,
-                "dao_addr": self.dao_addr
+                "dao_addr": self.dao_addr,
+                "closing_time": self.closing_time
             }))
 
     def create_fund_js(self, waitsecs, amounts):
         print("Creating 'fund.js'...")
-        with open(os.path.join(self.templates_dir, 'fund.template.js'), 'r') as f:
+        with open(
+                os.path.join(self.templates_dir, 'fund.template.js'),
+                'r'
+        ) as f:
             data = f.read()
         tmpl = Template(data)
         s = tmpl.substitute(
@@ -236,10 +251,22 @@ class TestContext():
     def run_test_fund(self):
         sale_secs = 15
         # if deployment did not already happen do it now, with some predefined
-        # values for this scenario
+        # values for this scenario (15 seconds)
         if not self.dao_addr:
             self.closing_time = seconds_in_future(sale_secs)
             self.run_test_deploy()
+        else:
+            sale_secs = self.closing_time - ts_now()
+            print(
+                "WARNING: Running the funding scenario with a pre-deployed "
+                "DAO contract. Closing time is {} which is approximately {} "
+                "seconds from now.".format(
+                    datetime.fromtimestamp(self.closing_time).strftime(
+                        '%Y-%m-%d %H:%M:%S'
+                    ),
+                    sale_secs
+                )
+            )
         total_amount = self.min_value + random.randint(1, 100)
         amounts = constrained_sum_sample_pos(7, total_amount)
         self.create_fund_js(sale_secs, amounts)
@@ -263,7 +290,10 @@ class TestContext():
         )
         m = r.search(output)
         if not m:
-            print("Error: Could not parse fund.js output properly")
+            print(
+                "Error: Could not parse fund.js output properly.Output was:\n"
+                "{}".format(output)
+            )
             sys.exit(1)
         print(m.groups())
         self.check(m.group('funded'), 'true', 'Check DAO is funded')

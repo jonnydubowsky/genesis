@@ -43,7 +43,7 @@ checkWork();
 console.log("Wait for end of sale");
 setTimeout(function() {
     miner.stop(0);
-    console.log("CHECK(dao.funded): " + dao.funded());
+    console.log("CHECK(dao.funded): " + dao.isFunded());
     console.log("CHECK(dao.totalSupply): " + web3.fromWei(dao.totalSupply()));
     for (i = 0; i < eth.accounts.length; i++) {
         console.log("CHECK(balanceuser" + i +"): " + web3.fromWei(dao.balanceOf(eth.accounts[i])));

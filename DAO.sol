@@ -232,7 +232,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         }
         else if (!_newServiceProvider && (!isRecipientAllowed(_recipient) || (_debatingPeriod < 2 weeks))) throw;
 
-        if (!funded || now < closingTime || (msg.value < proposalDeposit && !_newServiceProvider)) throw;
+        if (!isFunded || now < closingTime || (msg.value < proposalDeposit && !_newServiceProvider)) throw;
 
         if (_recipient == address(rewardAccount) && _amount > rewards) throw;
 
@@ -375,7 +375,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transfer(address _to, uint256 _value) returns (bool success) {
-        if (funded && now > closingTime && transferPayedOut(msg.sender, _to, _value) && super.transfer(_to, _value)){
+        if (isFunded && now > closingTime && transferPayedOut(msg.sender, _to, _value) && super.transfer(_to, _value)){
             return true;
         }
         else throw;
@@ -383,7 +383,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-        if (funded && now > closingTime && transferPayedOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)){
+        if (isFunded && now > closingTime && transferPayedOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)){
             return true;
         }
         else throw;

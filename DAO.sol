@@ -117,7 +117,7 @@ contract DAOInterface {
     /// @param _daoCreator The contract able to (re)create this DAO
     /// @param _minValue Minimal value for a successful DAO Token Sale
     /// @param _closingTime Date (in unix time) of the end of the DAO Token Sale
-    //  function DAO(address _defaultServiceProvider, DAO_Creator _daoCreator, uint _minValue, uint _closingTime)
+    //  function DAO(address _defaultServiceProvider, DAO_Creator _daoCreator, uint _minValue, uint _closingTime, address _privateSale)
 
     /// @notice Buy Token with `msg.sender` as the beneficiary as long as the DAO Token Sale is not closed, otherwise call receiveDAOReward().
     function () returns (bool success);

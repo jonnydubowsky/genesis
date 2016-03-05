@@ -198,8 +198,8 @@ contract DAOInterface {
     function halfMinQuorum() returns (bool _success);
 
 
-    event ProposalAdded(uint proposalID, address recipient, uint amount, string description);
-    event Voted(uint proposalID, bool position, address indexed voter);
+    event ProposalAdded(uint indexed proposalID, address recipient, uint amount, bool newServiceProvider, string description);
+    event Voted(uint indexed proposalID, bool position, address indexed voter);
     event ProposalTallied(uint indexed proposalID, bool result, uint quorum);
     event NewServiceProvider(address indexed _newServiceProvider);
     event AllowedRecipientAdded(address indexed _recipient);
@@ -267,7 +267,7 @@ contract DAO is DAOInterface, Token, TokenSale {
             p.splitData.length++;
         p.creator = msg.sender;
         p.proposalDeposit = msg.value;
-        ProposalAdded(_proposalID, _recipient, _amount, _description);
+        ProposalAdded(_proposalID, _recipient, _amount, _newServiceProvider, _description);
     }
 
 

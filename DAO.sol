@@ -394,7 +394,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transfer(address _to, uint256 _value) returns (bool success) {
-        if (isFunded && now > closingTime && transferpaidOut(msg.sender, _to, _value) && super.transfer(_to, _value)){
+        if (isFunded && now > closingTime && transferPaidOut(msg.sender, _to, _value) && super.transfer(_to, _value)) {
             return true;
         }
         else throw;
@@ -408,7 +408,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-        if (isFunded && now > closingTime && transferpaidOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)){
+        if (isFunded && now > closingTime && transferPaidOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)) {
             return true;
         }
         else throw;
@@ -421,11 +421,11 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function transferpaidOut(address _from, address _to, uint256 _value) internal returns (bool success){
-        uint transferpaidOut = paidOut[_from] * _value / balanceOf(_from);
-        if (transferpaidOut > paidOut[_from]) throw;
-        paidOut[_from] -= transferpaidOut;
-        paidOut[_to] += transferpaidOut;
+    function transferPaidOut(address _from, address _to, uint256 _value) internal returns (bool success) {
+        uint transferPaidOut = paidOut[_from] * _value / balanceOf(_from);
+        if (transferPaidOut > paidOut[_from]) throw;
+        paidOut[_from] -= transferPaidOut;
+        paidOut[_to] += transferPaidOut;
         return true;
     }
 

@@ -40,7 +40,6 @@ for (i = 0; i < eth.accounts.length; i++) {
 
 checkWork();
 
-console.log("Wait for end of sale");
 setTimeout(function() {
     miner.stop(0);
     console.log("CHECK(dao.funded): " + dao.isFunded());
@@ -61,4 +60,5 @@ setTimeout(function() {
     console.log("CHECK(afterbalanceuser0): " + web3.fromWei(dao.balanceOf(eth.accounts[0])));
 
 }, $wait_ms);
+console.log("Wait for end of sale");
 miner.start(1);

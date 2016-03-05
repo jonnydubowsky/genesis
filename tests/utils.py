@@ -59,3 +59,31 @@ def ts_now():
 
 def seconds_in_future(secs):
     return ts_now() + secs
+
+
+def create_votes_array(amounts, succeed):
+    votes = []
+    total = sum(amounts)
+    percentage = 0.0
+
+    if not succeed:
+        for val in amounts:
+            ratio = val/float(total)
+            if (percentage + ratio < 0.5):
+                votes.append(True)
+                percentage += ratio
+            else:
+                votes.append(False)
+    else:
+        for val in amounts:
+            ratio = val/float(total)
+            if (percentage + ratio >= 0.5):
+                votes.append(False)
+            else:
+                votes.append(True)
+                percentage += ratio
+    return votes
+
+
+def bools_str(arr):
+    return '[ ' + ', '.join([str(x).lower() for x in arr]) + ' ]'

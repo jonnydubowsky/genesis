@@ -13,24 +13,25 @@ from string import Template
 import re
 import random
 from utils import (
-    constrained_sum_sample_pos, rm_file,
-    determine_binary, ts_now, seconds_in_future
+    constrained_sum_sample_pos, rm_file, determine_binary, ts_now,
+    seconds_in_future, create_votes_array, bools_str
 )
 from args import test_args
 
 
 class TestContext():
     def __init__(self, args):
+        self.args = args
         self.tests_ok = True
         self.dao_addr = None  # check to determine if DAO is deployed
         self.offer_addr = None  # check to determine if offer is deployed
+        self.token_amounts = None  # check to determine if funding happened
         self.tests_dir = os.path.dirname(os.path.realpath(__file__))
         self.save_file = os.path.join(self.tests_dir, "data", "saved")
         self.templates_dir = os.path.join(self.tests_dir, 'templates')
         self.contracts_dir = os.path.dirname(self.tests_dir)
         self.solc = determine_binary(args.solc, 'solc')
         self.geth = determine_binary(args.geth, 'geth')
-        self.verbose = args.verbose
 
         self.closing_time = seconds_in_future(args.closing_time * 60)
         self.min_value = args.min_value
@@ -38,6 +39,7 @@ class TestContext():
             'none': self.run_test_none,
             'deploy': self.run_test_deploy,
             'fund': self.run_test_fund,
+            'proposal': self.run_test_proposal,
         }
 
         # keep this at end since any data loaded should override constructor
@@ -56,6 +58,7 @@ class TestContext():
                 data = json.loads(f.read())
             self.dao_addr = data['dao_addr']
             self.dao_creator_addr = data['dao_creator_addr']
+            self.offer_addr = data['offer_addr']
             self.closing_time = data['closing_time']
             print("Loaded dao_addr: {}".format(self.dao_addr))
             print("Loaded dao_creator_addr: {}".format(self.dao_creator_addr))
@@ -78,7 +81,7 @@ class TestContext():
 
     def check(self, got, expect, msg):
         res = got == expect
-        if self.verbose:
+        if self.args.verbose:
             print("{} ... {}".format(msg, "OK!" if res else "FAIL!"))
         if not res:
             self.tests_ok = False
@@ -166,6 +169,8 @@ class TestContext():
             dao_bin=self.dao_bin,
             creator_abi=self.creator_abi,
             creator_bin=self.creator_bin,
+            offer_abi=self.offer_abi,
+            offer_bin=self.offer_bin,
             min_value=self.min_value,
             closing_time=self.closing_time
         )
@@ -178,23 +183,30 @@ class TestContext():
         output = self.run_script('deploy.js')
 
         r = re.compile(
-            'dao_creator_address: (?P<dao_creator_address>.*?)\n.*?dao_address'
-            ': (?P<dao_address>.*?)\n',
+            'dao_creator_address: (?P<dao_creator_address>.*?)\n.*'
+            'offer_address: (?P<offer_address>.*?)\n.*'
+            'dao_address: (?P<dao_address>.*?)\n',
             flags=re.MULTILINE | re.DOTALL
         )
         m = r.search(output)
         if not m:
-            print("Error: Could not find addresses in the deploy output.")
+            print(
+                "ERROR: Could not find addresses in the deploy output."
+                "    Output was:\n{}".format(output.replace('\n', '\n    '))
+            )
             sys.exit(1)
 
         self.dao_creator_addr = m.group('dao_creator_address')
         self.dao_addr = m.group('dao_address')
+        self.offer_addr = m.group('offer_address')
         print("DAO Creator address is: {}".format(self.dao_creator_addr))
         print("DAO address is: {}".format(self.dao_addr))
+        print("SampleOffer address is: {}".format(self.offer_addr))
         with open(self.save_file, "w") as f:
             f.write(json.dumps({
                 "dao_creator_addr": self.dao_creator_addr,
                 "dao_addr": self.dao_addr,
+                "offer_addr": self.offer_addr,
                 "closing_time": self.closing_time
             }))
 
@@ -209,7 +221,7 @@ class TestContext():
         s = tmpl.substitute(
             dao_abi=self.dao_abi,
             dao_address=self.dao_addr,
-            wait_ms=waitsecs*1000,
+            wait_ms=(waitsecs-3)*1000,  # wait a little bit less, since a lot of time passed since creation
             userval0=amounts[0],
             userval1=amounts[1],
             userval2=amounts[2],
@@ -224,7 +236,7 @@ class TestContext():
     def run_test_fund(self):
         sale_secs = 15
         # if deployment did not already happen do it now, with some predefined
-        # values for this scenario (15 seconds)
+        # values for this scenario (10 seconds)
         if not self.dao_addr:
             self.closing_time = seconds_in_future(sale_secs)
             self.run_test_deploy()
@@ -241,8 +253,8 @@ class TestContext():
                 )
             )
         total_amount = self.min_value + random.randint(1, 100)
-        amounts = constrained_sum_sample_pos(7, total_amount)
-        self.create_fund_js(sale_secs, amounts)
+        self.token_amounts = constrained_sum_sample_pos(7, total_amount)
+        self.create_fund_js(sale_secs, self.token_amounts)
         print(
             "Notice: Funding period is {} seconds so the test will wait "
             "as much".format(sale_secs)
@@ -275,7 +287,7 @@ class TestContext():
             total_amount,
             'Check total supply of tokens'
         )
-        for idx, amount in enumerate(amounts):
+        for idx, amount in enumerate(self.token_amounts):
             self.check(
                 int(m.group('balance{}'.format(idx))),
                 amount,
@@ -283,10 +295,50 @@ class TestContext():
             )
         self.check(
             int(m.group('afterbalance0')),
-            amounts[0],
+            self.token_amounts[0],
             'Check no tokens can be bought after the end of the sale period'
         )
         self.test_results('fund.js')
+
+    def create_proposal_js(self, offer_amount, debating_period, votes):
+        print("Creating 'proposal.js'...")
+        with open(
+                os.path.join(self.templates_dir, 'proposal.template.js'),
+                'r'
+        ) as f:
+            data = f.read()
+        tmpl = Template(data)
+        s = tmpl.substitute(
+            dao_abi=self.dao_abi,
+            dao_address=self.dao_addr,
+            offer_address=self.offer_addr,
+            offer_amount=offer_amount,
+            offer_desc='Test Proposal',
+            transaction_bytecode='0x2ca15122',  # solc --hashes SampleOffer.sol
+            debating_period=debating_period,
+            votes=bools_str(votes)
+        )
+        with open("proposal.js", "w") as f:
+            f.write(s)
+
+    def run_test_proposal(self):
+        if not self.token_amounts:
+            # run the funding scenario first
+            self.run_test_fund()
+
+        debate_secs = 20
+        amount = random.randint(1, sum(self.token_amounts))
+        votes = create_votes_array(
+            self.token_amounts,
+            not self.args.proposal_fail
+        )
+        self.create_proposal_js(amount, debate_secs, votes)
+        print(
+            "Notice: Debate period is {} seconds so the test will wait "
+            "as much".format(debate_secs)
+        )
+        output = self.run_script('proposal.js')
+        print("PROPOSAL.JS output:\n{}".format(output))
 
     def run_test_none(self):
         print("No test scenario provided.")

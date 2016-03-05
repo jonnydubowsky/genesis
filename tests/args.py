@@ -47,8 +47,13 @@ def test_args():
         default=20
     )
     p.add_argument(
+        '--proposal-fail',
+        action='store_true',
+        help='If given, then in the proposal scenario the voting will fail'
+    )
+    p.add_argument(
         '--scenario',
-        choices=['none', 'deploy', 'fund'],
+        choices=['none', 'deploy', 'fund', 'proposal'],
         default='none',
         help='Test scenario to play out'
     )

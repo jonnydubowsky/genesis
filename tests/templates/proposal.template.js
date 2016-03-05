@@ -18,9 +18,8 @@ checkWork();
 
 console.log("CHECK(serviceprovider): " + dao.serviceProvider() + " == " + eth.accounts[0]);
 console.log("CHECK(offer_is_allowed_recipient): " + dao.allowedRecipients(0));
-console.log("CHECK(offer_is_allowed_recipient): " + dao.allowedRecipients('$offer_address'));
 
-console.log("Creating a new proposal");
+console.log("Creating a new proposal for $offer_amount ether.");
 var tx_hash = null;
 dao.newProposal.sendTransaction(
     '$offer_address',
@@ -72,12 +71,13 @@ for (i = 0; i < votes.length; i++) {
 }
 checkWork();
 console.log("CHECK(proposal.numberOfVotes): " + dao.numberOfVotes(prop_id));
+console.log("CHECK(minquorum.proposal.amount): " + dao.minQuorum(web3.toWei($offer_amount, "ether")));
 
 setTimeout(function() {
     miner.stop(0);
     console.log("After debating period. NOW is: " + Math.floor(Date.now() / 1000));
     console.log("Executing proposal ...");
-    dao.executeProposal(prop_id, '$transaction_bytecode',{from:eth.accounts[0], gas:1000000});
+    dao.executeProposal.sendTransaction(prop_id, '$transaction_bytecode', {from:eth.accounts[0], gas:1000000});
     checkWork();
 
     console.log("CHECK(proposal.passed): " + dao.proposals(prop_id)[5]); // 5th member of the structure is the proposal passed thing

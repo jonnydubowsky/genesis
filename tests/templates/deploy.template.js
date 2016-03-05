@@ -56,6 +56,13 @@ var _daoCreatorContract = creatorContract.new(
 checkWork();
 var offerContract = web3.eth.contract($offer_abi);
 var offer = offerContract.new(
+    _defaultServiceProvider, //service provider
+    '0x0',  // This is a hash of the paper contract. Does not matter for testing
+    web3.toWei(1, "ether"), //total costs
+    web3.toWei(1, "ether"), //one time costs
+    web3.toWei(1, "ether"), //min daily costs
+    web3.toWei(1, "ether"), //reward divison
+    web3.toWei(1, "ether"), //deployment rewards
     {
 	    from: web3.eth.accounts[0],
 	    data: '$offer_bin',

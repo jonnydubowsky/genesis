@@ -27,7 +27,6 @@ contract TokenSaleInterface {
     uint public closingTime;                   // end of token sale, in Unix time
     uint public minValue;                      // minimum funding goal of the token sale, denominated in tokens
     bool public isFunded;                      // true if DAO has reached its minimum funding goal, false otherwise
-
     address public privateSale;                // used for DAO splits - if privateSale is 0, then it is a public sale, otherwise, only the address stored in privateSale is allowed to purchase tokens
 
     /// @dev Constructor setting the minimum funding goal and the end of the Token Sale

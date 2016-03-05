@@ -124,7 +124,7 @@ contract DAOInterface {
 
     /// @dev function used to receive rewards as the DAO
     /// @return Whether the call to this function was successful or not
-    function receiveDAOReward() returns(bool);
+    function payDAO() returns(bool);
 
     /// @notice `msg.sender` creates a proposal to send `_amount` Wei to `_recipient` with the transaction data `_transactionBytecode`.
     ///         (If `_newServiceProvider` is true, then this is a proposal that splits the DAO and sets `_recipient` as the new DAO's new service provider)
@@ -165,7 +165,7 @@ contract DAOInterface {
     /// @param _newServiceProvider The new service provider of the new DAO
     /// @dev This function, when called for the first time for this proposal, will create a new DAO and send the portion of the remaining
     ///      funds which can be attributed to the sender to the new DAO. It will also burn the Tokens of the sender. (TODO: document rewardTokens)
-    function confirmNewServiceProvider(uint _proposalID, address _newServiceProvider) returns (bool _success);
+    function splitDAO(uint _proposalID, address _newServiceProvider) returns (bool _success);
 
     /// @notice add new possible recipient `_recipient` for transactions from the DAO (through proposals)
     /// @param _recipient New recipient address
@@ -226,13 +226,13 @@ contract DAO is DAOInterface, Token, TokenSale {
         // The first clause is needed for a split DAO to receive its rewards of the parent DAO. The 40 days are a safety measure.
         // No new DAO can be created within this time, and in the case people accidentally send ether to the DAO Token Sale, it will bounce back in the buyTokenProxy function
         if (now > closingTime + 40 days)
-            return receiveDAOReward();
+            return payDAO();
         else
             return buyTokenProxy(msg.sender);
     }
 
 
-    function receiveDAOReward() returns(bool) {
+    function payDAO() returns(bool) {
         rewards += msg.value;
         return true;
     }
@@ -338,7 +338,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function confirmNewServiceProvider(uint _proposalID, address _newServiceProvider) noEther onlyTokenholders returns (bool _success) {
+    function splitDAO(uint _proposalID, address _newServiceProvider) noEther onlyTokenholders returns (bool _success) {
         Proposal p = proposals[_proposalID];
 
         // sanity check

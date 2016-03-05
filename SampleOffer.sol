@@ -103,7 +103,7 @@ contract SampleOffer
         if (msg.value < deploymentReward)
             throw;
         if (promiseValid) {
-            if (client.receiveDAOReward.value(msg.value)()) return true;
+            if (client.payDAO.value(msg.value)()) return true;
             else throw;
         }
         else {
@@ -115,7 +115,7 @@ contract SampleOffer
     // pay reward
     function () returns(bool) {
         if (promiseValid) {
-            if (client.receiveDAOReward.value(msg.value)()) return true;
+            if (client.payDAO.value(msg.value)()) return true;
             else throw;
         }
         else {

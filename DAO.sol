@@ -378,6 +378,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         totalSupply -= balances[msg.sender];
         balances[msg.sender] = 0;
         paidOut[address(p.splitData[0].newDAO)] += paidOut[msg.sender];
+        paidOut[msg.sender] = 0;
 
         return true;
     }

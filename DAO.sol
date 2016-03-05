@@ -253,6 +253,8 @@ contract DAO is DAOInterface, Token, TokenSale {
 
         if (_recipient == address(rewardAccount) && _amount > rewards) throw;
 
+        if (now + _debatingPeriod < now) throw; // preventing overflow
+
         _proposalID = proposals.length++;
         Proposal p = proposals[_proposalID];
         p.recipient = _recipient;

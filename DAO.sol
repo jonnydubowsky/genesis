@@ -70,8 +70,8 @@ contract DAOInterface {
         string description;
         // A Unix timestamp, denoting the end of the voting period
         uint votingDeadline;
-        // True if the proposal is open for voting, false if the votes have already been counted
-        bool openToVote;
+        // True if the proposal has not been tallied, false if the votes have already been counted
+        bool open;
         // True if the sufficient votes have been counted with the majority saying yes.
         bool proposalPassed;
         // A hash to check validity of a proposal. Equal to sha3(_recipient, _amount, _transactionBytecode)
@@ -260,7 +260,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         p.description = _description;
         p.proposalHash = sha3(_recipient, _amount, _transactionBytecode);
         p.votingDeadline = now + _debatingPeriod;
-        p.openToVote = true;
+        p.open = true;
         //p.proposalPassed = false; // that's default
         p.newServiceProvider = _newServiceProvider;
         if (_newServiceProvider)
@@ -292,7 +292,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         Proposal p = proposals[_proposalID];
         // Check if the proposal can be executed
         if (now < p.votingDeadline  // has the voting deadline arrived?
-            || !p.openToVote        // have the votes been counted?
+            || !p.open        // have the votes been counted?
             || p.newServiceProvider // new service provider proposal get confirmed not executed
             || p.proposalHash != sha3(p.recipient, p.amount, _transactionBytecode)) // Does the transaction code match the proposal?
             throw;
@@ -335,7 +335,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         }
 
         // Since the voting deadline is over, there is no point in counting again.
-        p.openToVote = false;
+        p.open = false;
 
         // Fire event.
         ProposalTallied(_proposalID, _success, quorum);

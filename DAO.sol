@@ -193,6 +193,10 @@ contract DAOInterface {
     /// @return Whether the transfer was successful or not
     function transferFromWithoutReward(address _from, address _to, uint256 _amount) returns (bool success);
 
+    /// @notice half the minimum quorum in the case it has not been met for over 52 weeks.
+    /// @return Whether the halfing was successful or not
+    function halfMinQuorum() returns (bool _success);
+
 
     event ProposalAdded(uint proposalID, address recipient, uint amount, string description);
     event Voted(uint proposalID, bool position, address indexed voter);

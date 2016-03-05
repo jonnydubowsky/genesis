@@ -180,6 +180,19 @@ contract DAOInterface {
     /// @notice get my portion of the reward which has been sent to `rewardAccount`
     function getMyReward();
 
+    /// @notice send `_amount` tokens to `_to` from `msg.sender`. Prior to this getMyReward() is called.
+    /// @param _to The address of the recipient
+    /// @param _amount The amount of tokens to be transfered
+    /// @return Whether the transfer was successful or not
+    function transferWithoutReward(address _to, uint256 _amount) returns (bool success);
+
+    /// @notice send `_amount` tokens to `_to` from `_from` on the condition it is approved by `_from`. Prior to this getMyReward() is called.
+    /// @param _from The address of the sender
+    /// @param _to The address of the recipient
+    /// @param _amount The amount of tokens to be transfered
+    /// @return Whether the transfer was successful or not
+    function transferFromWithoutReward(address _from, address _to, uint256 _amount) returns (bool success);
+
 
     event ProposalAdded(uint proposalID, address recipient, uint amount, string description);
     event Voted(uint proposalID, bool position, address indexed voter);

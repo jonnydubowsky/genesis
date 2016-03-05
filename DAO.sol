@@ -74,7 +74,7 @@ contract DAOInterface {
         bool open;
         // True if the sufficient votes have been counted with the majority saying yes.
         bool proposalPassed;
-        // A hash to check validity of a proposal. Equal to sha3(_recipient, _amount, _transactionBytecode)
+        // A hash to check validity of a proposal. Equal to sha3(_recipient, _amount, _transactionData)
         bytes32 proposalHash;
         // The deposit in wei the creator puts in the proposal. Is taken from the msg.value of a newProposal call.
         uint proposalDeposit;
@@ -126,24 +126,24 @@ contract DAOInterface {
     /// @return Whether the call to this function was successful or not
     function payDAO() returns(bool);
 
-    /// @notice `msg.sender` creates a proposal to send `_amount` Wei to `_recipient` with the transaction data `_transactionBytecode`.
+    /// @notice `msg.sender` creates a proposal to send `_amount` Wei to `_recipient` with the transaction data `_transactionData`.
     ///         (If `_newServiceProvider` is true, then this is a proposal that splits the DAO and sets `_recipient` as the new DAO's new service provider)
     /// @param _recipient The address of the recipient of the proposed transaction
     /// @param _amount The amount of wei to be sent with the proposed transaction
     /// @param _description A string describing the proposal
-    /// @param _transactionBytecode The data of the proposed transaction
+    /// @param _transactionData The data of the proposed transaction
     /// @param _debatingPeriod The time used for debating the proposal, at least 2 weeks.
     /// @param _newServiceProvider A bool defining whether this proposal is about a new service provider or not
     /// @return The proposal ID. Needed for voting on the proposal
-    function newProposal(address _recipient, uint _amount, string _description, bytes _transactionBytecode, uint _debatingPeriod, bool _newServiceProvider) onlyTokenholders returns (uint _proposalID);
+    function newProposal(address _recipient, uint _amount, string _description, bytes _transactionData, uint _debatingPeriod, bool _newServiceProvider) onlyTokenholders returns (uint _proposalID);
 
-    /// @notice Check that the proposal with the ID `_proposalID` matches a transaction which sends `_amount` with data `_transactionBytecode` to `_recipient`
+    /// @notice Check that the proposal with the ID `_proposalID` matches a transaction which sends `_amount` with data `_transactionData` to `_recipient`
     /// @param _proposalID The proposal ID
     /// @param _recipient The recipient of the proposed transaction
     /// @param _amount The amount of wei to be sent with the proposed transaction
-    /// @param _transactionBytecode The data of the proposed transaction
+    /// @param _transactionData The data of the proposed transaction
     /// @return Whether the proposal ID matches the transaction data or not
-    function checkProposalCode(uint _proposalID, address _recipient, uint _amount, bytes _transactionBytecode) constant returns (bool _codeChecksOut);
+    function checkProposalCode(uint _proposalID, address _recipient, uint _amount, bytes _transactionData) constant returns (bool _codeChecksOut);
 
     /// @notice Vote on proposal `_proposalID` with `_supportsProposal`
     /// @param _proposalID The proposal ID
@@ -151,12 +151,12 @@ contract DAOInterface {
     /// @return The vote ID.
     function vote(uint _proposalID, bool _supportsProposal) onlyTokenholders returns (uint _voteID);
 
-    /// @notice Checks whether proposal `_proposalID` with transaction data `_transactionBytecode` has been voted for or rejected,
+    /// @notice Checks whether proposal `_proposalID` with transaction data `_transactionData` has been voted for or rejected,
     ///         and executes the transaction in the case it has been voted for.
     /// @param _proposalID The proposal ID
-    /// @param _transactionBytecode The data of the proposed transaction // TODO is this needed
+    /// @param _transactionData The data of the proposed transaction // TODO is this needed
     /// @return Whether the proposed transaction has been executed or not
-    function executeProposal(uint _proposalID, bytes _transactionBytecode) returns (bool _success);
+    function executeProposal(uint _proposalID, bytes _transactionData) returns (bool _success);
 
     /// @notice ATTENTION! I confirm to move my remaining funds to a new DAO with `_newServiceProvider` as the new service provider,
     ///         as has been proposed in proposal `_proposalID`. This will burn my tokens. This can not be undone and will split the
@@ -242,9 +242,9 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function newProposal(address _recipient, uint _amount, string _description, bytes _transactionBytecode, uint _debatingPeriod, bool _newServiceProvider) onlyTokenholders returns (uint _proposalID){
+    function newProposal(address _recipient, uint _amount, string _description, bytes _transactionData, uint _debatingPeriod, bool _newServiceProvider) onlyTokenholders returns (uint _proposalID){
         // check sanity
-        if (_newServiceProvider && (_amount != 0 || _transactionBytecode.length != 0 || _recipient == serviceProvider || msg.value > 0 || _debatingPeriod < 1 weeks)) {
+        if (_newServiceProvider && (_amount != 0 || _transactionData.length != 0 || _recipient == serviceProvider || msg.value > 0 || _debatingPeriod < 1 weeks)) {
             throw;
         }
         else if (!_newServiceProvider && (!isRecipientAllowed(_recipient) || (_debatingPeriod < 2 weeks))) throw;
@@ -258,7 +258,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         p.recipient = _recipient;
         p.amount = _amount;
         p.description = _description;
-        p.proposalHash = sha3(_recipient, _amount, _transactionBytecode);
+        p.proposalHash = sha3(_recipient, _amount, _transactionData);
         p.votingDeadline = now + _debatingPeriod;
         p.open = true;
         //p.proposalPassed = false; // that's default
@@ -271,9 +271,9 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function checkProposalCode(uint _proposalID, address _recipient, uint _amount, bytes _transactionBytecode) noEther constant returns (bool _codeChecksOut) {
+    function checkProposalCode(uint _proposalID, address _recipient, uint _amount, bytes _transactionData) noEther constant returns (bool _codeChecksOut) {
         Proposal p = proposals[_proposalID];
-        return p.proposalHash == sha3(_recipient, _amount, _transactionBytecode);
+        return p.proposalHash == sha3(_recipient, _amount, _transactionData);
     }
 
 
@@ -288,13 +288,13 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function executeProposal(uint _proposalID, bytes _transactionBytecode) noEther returns (bool _success) {
+    function executeProposal(uint _proposalID, bytes _transactionData) noEther returns (bool _success) {
         Proposal p = proposals[_proposalID];
         // Check if the proposal can be executed
         if (now < p.votingDeadline  // has the voting deadline arrived?
             || !p.open        // have the votes been counted?
             || p.newServiceProvider // new service provider proposal get confirmed not executed
-            || p.proposalHash != sha3(p.recipient, p.amount, _transactionBytecode)) // Does the transaction code match the proposal?
+            || p.proposalHash != sha3(p.recipient, p.amount, _transactionData)) // Does the transaction code match the proposal?
             throw;
 
         // tally the votes
@@ -315,7 +315,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         if (quorum >= minQuorum(p.amount) && yea > nay) {
             if (!p.creator.send(p.proposalDeposit)) throw;
             // Without this throw, the creator of the proposal can repeat this, and get so much fund.
-            if (!p.recipient.call.value(p.amount)(_transactionBytecode)) throw;
+            if (!p.recipient.call.value(p.amount)(_transactionData)) throw;
             p.proposalPassed = true;
             _success = true;
             lastTimeMinQuorumMet = now;

@@ -81,7 +81,7 @@ contract SampleOffer
             promiseValid = false;        
     }
 
-    function getMonthlyPayment() {
+    function getDailyPayment() {
         if (msg.sender != serviceProvider) throw;
         uint amount = (now - dateOfSignature) / (1 days) * dailyCosts - paidOut;
         if (serviceProvider.send(amount))

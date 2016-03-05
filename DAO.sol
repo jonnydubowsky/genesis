@@ -178,7 +178,7 @@ contract DAOInterface {
     function changeProposalDeposit(uint _proposalDeposit) external;
 
     /// @notice get my portion of the reward which has been sent to `rewardAccount`
-    function getMyReward() external;
+    function getMyReward();
 
 
     event ProposalAdded(uint proposalID, address recipient, uint amount, string description);
@@ -365,7 +365,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function getMyReward() noEther external {
+    function getMyReward() noEther {
         // my portion of the rewardToken of this DAO, or when called by a split child DAO, their portion of the rewardToken.
         uint myPortionOfTheReward = (balanceOf(msg.sender) * rewardToken[address(this)]) / totalSupply + rewardToken[msg.sender];
         uint myReward = (myPortionOfTheReward * rewardAccount.accumulatedInput()) / totalRewardToken - paidOut[msg.sender];
@@ -382,11 +382,23 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
+    function transferWithoutReward(address _to, uint256 _value) returns (bool success) {
+        getMyReward();
+        return transfer(_to, _value);
+    }
+
+
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
         if (isFunded && now > closingTime && transferpaidOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)){
             return true;
         }
         else throw;
+    }
+
+
+    function transferFromWithoutReward(address _from, address _to, uint256 _value) returns (bool success) {
+        getMyReward();
+        return transferFrom(_from, _to, _value);
     }
 
 

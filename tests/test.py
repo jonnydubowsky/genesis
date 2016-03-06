@@ -14,9 +14,8 @@ import re
 import random
 from utils import (
     constrained_sum_sample_pos, rm_file, determine_binary, ts_now,
-    seconds_in_future, create_votes_array, bools_str, eval_test
+    seconds_in_future, create_votes_array, arr_str, eval_test, write_js
 )
-from jsutils import js_common_intro
 from args import test_args
 
 
@@ -72,22 +71,6 @@ class TestContext():
         shutil.rmtree(os.path.join(data_dir, "dapp"), ignore_errors=True)
         rm_file(os.path.join(data_dir, "nodekey"))
         rm_file(os.path.join(data_dir, "saved"))
-
-    def test_results(self, testname):
-        if self.tests_ok:
-            print("Tests for '{}' PASSED!".format(testname))
-        else:
-            print("Tests for '{}' FAILED!".format(testname))
-            sys.exit(1)
-
-    def check(self, got, expect, msg):
-        res = got == expect
-        if self.args.verbose:
-            print("{} ... {}".format(msg, "OK!" if res else "FAIL!"))
-        if not res:
-            self.tests_ok = False
-            print("    Expected '{}' but got '{}'".format(expect, got))
-        return res
 
     def run_script(self, script):
         print("Running '{}' script".format(script))
@@ -226,21 +209,14 @@ class TestContext():
             dao_abi=self.dao_abi,
             dao_address=self.dao_addr,
             wait_ms=(waitsecs-3)*1000,  # wait a little bit less, since a lot of time passed since creation
-            userval0=amounts[0],
-            userval1=amounts[1],
-            userval2=amounts[2],
-            userval3=amounts[3],
-            userval4=amounts[4],
-            userval5=amounts[5],
-            userval6=amounts[6]
+            amounts=arr_str(amounts)
         )
-        with open("fund.js", "w") as f:
-            f.write(s)
+        write_js('fund.js', s)
 
     def run_test_fund(self):
-        sale_secs = 15
+        sale_secs = 20
         # if deployment did not already happen do it now, with some predefined
-        # values for this scenario (10 seconds)
+        # values for this scenario
         if not self.dao_addr:
             self.closing_time = seconds_in_future(sale_secs)
             self.run_test_deploy()
@@ -264,45 +240,12 @@ class TestContext():
             "as much".format(sale_secs)
         )
         output = self.run_script('fund.js')
-        r = re.compile(
-            r'CHECK\(dao.funded\): (?P<funded>.*?)\n.*'
-            'CHECK\(dao.totalSupply\): (?P<total_supply>.*?)\n.*'
-            'CHECK\(balanceuser0\): (?P<balance0>.*?)\n.*'
-            'CHECK\(balanceuser1\): (?P<balance1>.*?)\n.*'
-            'CHECK\(balanceuser2\): (?P<balance2>.*?)\n.*'
-            'CHECK\(balanceuser3\): (?P<balance3>.*?)\n.*'
-            'CHECK\(balanceuser4\): (?P<balance4>.*?)\n.*'
-            'CHECK\(balanceuser5\): (?P<balance5>.*?)\n.*'
-            'CHECK\(balanceuser6\): (?P<balance6>.*?)\n.*'
-            'CHECK\(afterbalanceuser0\): (?P<afterbalance0>.*)\n.*',
-            flags=re.MULTILINE | re.DOTALL
-        )
-        m = r.search(output)
-        if not m:
-            print(
-                "Error: Could not parse fund.js output properly.Output was:\n"
-                "{}".format(output)
-            )
-            sys.exit(1)
-        print(m.groups())
-        self.check(m.group('funded'), 'true', 'Check DAO is funded')
-        self.check(
-            int(m.group('total_supply')),
-            total_amount,
-            'Check total supply of tokens'
-        )
-        for idx, amount in enumerate(self.token_amounts):
-            self.check(
-                int(m.group('balance{}'.format(idx))),
-                amount,
-                'Check token balance of user {}'.format(idx)
-            )
-        self.check(
-            int(m.group('afterbalance0')),
-            self.token_amounts[0],
-            'Check no tokens can be bought after the end of the sale period'
-        )
-        self.test_results('fund.js')
+        eval_test('fund.js', output, {
+            "dao_funded": True,
+            "total_supply": total_amount,
+            "balances": self.token_amounts,
+            "user0_after": self.token_amounts[0],
+        })
 
     def create_proposal_js(self, offer_amount, debating_period, votes):
         print("Creating 'proposal.js'...")
@@ -322,10 +265,9 @@ class TestContext():
             proposal_deposit=self.args.proposal_deposit,
             transaction_bytecode='0x2ca15122',  # solc --hashes SampleOffer.sol
             debating_period=debating_period,
-            votes=bools_str(votes)
+            votes=arr_str(votes)
         )
-        with open("proposal.js", "w") as f:
-            f.write("{}\n{}".format(js_common_intro(), s))
+        write_js('proposal.js', s)
 
     def run_test_proposal(self):
         if not self.token_amounts:

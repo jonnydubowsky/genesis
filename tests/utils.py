@@ -5,6 +5,7 @@ import os
 import json
 import sys
 from datetime import datetime
+from jsutils import js_common_intro
 
 
 def constrained_sum_sample_pos(n, total):
@@ -88,18 +89,18 @@ def create_votes_array(amounts, succeed):
     return votes
 
 
-def bools_str(arr):
+def arr_str(arr):
     return '[ ' + ', '.join([str(x).lower() for x in arr]) + ' ]'
 
 
 def eval_test(name, output, expected_dict):
     tests_fail = False
-    results = json.loads(output.split('Test Results: ', 1)[1])
-
-    if len(results) != 2:
+    split = output.split('Test Results: ', 1)
+    if len(split) != 2:
         print("Could not parse '{}' output properly. Output was:\n{}".format(
             name, output
         ))
+    results = json.loads(split[1])
 
     for k, v in expected_dict.iteritems():
         if k not in results:
@@ -117,3 +118,9 @@ def eval_test(name, output, expected_dict):
     else:
         print("Tests for '{}' FAILED!".format(name))
         sys.exit(1)
+
+
+def write_js(name, contents):
+    """Write a javascript file from a template, prepending common intro"""
+    with open(name, "w") as f:
+            f.write("{}\n{}".format(js_common_intro(), contents))

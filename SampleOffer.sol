@@ -25,7 +25,6 @@ contract SampleOffer
     uint oneTimeCosts;
     uint dailyCosts;
 
-    bool promiseValid;
 
     address serviceProvider;
     bytes32 hashOfTheContract;
@@ -35,6 +34,7 @@ contract SampleOffer
     uint dateOfSignature;
     DAO client; // address of DAO
 
+    bool public promiseValid;
     uint public rewardDivisor;
     uint public deploymentReward;
 

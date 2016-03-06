@@ -52,6 +52,12 @@ def test_args():
         help='If given, then in the proposal scenario the voting will fail'
     )
     p.add_argument(
+        '--proposal-deposit',
+        type=int,
+        help='The proposal deposit. Has to be more than 20 ether',
+        default=22
+    )
+    p.add_argument(
         '--offer-onetime-costs',
         type=int,
         help='The one time costs (in ether) in the offer to the DAO',

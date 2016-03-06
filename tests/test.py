@@ -88,6 +88,25 @@ class TestContext():
             print("    Expected '{}' but got '{}'".format(expect, got))
         return res
 
+    def test(self, testname, output, expected_dict):
+        results = json.loads(output.split('Test Results: ', 1)[1])
+        for k, v in expected_dict.iteritems():
+            if k not in results:
+                self.tests_ok = False
+                print("Did not find '{}' in the test results".format(k))
+                continue
+            if results[k] != v:
+                self.tests_ok = False
+                print("'Expected {} for '{}' but got {}".format(
+                    v, k, results[k]
+                ))
+
+        if self.tests_ok:
+            print("Tests for '{}' PASSED!".format(testname))
+        else:
+            print("Tests for '{}' FAILED!".format(testname))
+            sys.exit(1)
+
     def run_script(self, script):
         print("Running '{}' script".format(script))
         return subprocess.check_output([
@@ -314,9 +333,11 @@ class TestContext():
         s = tmpl.substitute(
             dao_abi=self.dao_abi,
             dao_address=self.dao_addr,
+            offer_abi=self.offer_abi,
             offer_address=self.offer_addr,
             offer_amount=offer_amount,
             offer_desc='Test Proposal',
+            proposal_deposit=self.args.proposal_deposit,
             transaction_bytecode='0x2ca15122',  # solc --hashes SampleOffer.sol
             debating_period=debating_period,
             votes=bools_str(votes)
@@ -342,25 +363,15 @@ class TestContext():
             "as much".format(debate_secs)
         )
         output = self.run_script('proposal.js')
-        r = re.compile(
-            r'CHECK(pCreatorBalanceStart):(?P<creatorStart>.*?)\n.*'
-            'CHECK(pCreatorBalanceAfterProposal):(?P<creatorAfterProposal>.*?)\n.*'
-            'CHECK(dao.numberOfProposals):(?P<numberOfProposals>.*?)\n.*'
-            'CHECK\(proposal.numberOfVotes\): (?P<numberOfVotes>.*?)\n.*'
-            'CHECK\(serviceProviderbalancebefore\): (?P<providerBalanceBefore>.*?)\n.*'
-            'CHECK\(proposal.passed\): (?P<proposalPassed>.*?)\n.*'
-            'CHECK\(pCreatorBalanceAfterExecution\): (?P<creatorAfterExecution>.*?)\n.*'
-            'CHECK\(serviceProviderbalanceafter\): (?P<providerBalanceAfter>.*?)\n.*',
-            flags=re.MULTILINE | re.DOTALL
-        )
-        m = r.search(output)
-        if not m:
-            print(
-                "Error: Could not parse proposal.js output properly.Output was:\n"
-                "{}".format(output)
-            )
-            sys.exit(1)
-        print(m.groups())
+        self.test('proposal.js', output, {
+            "dao_proposals_number": "1",
+            "proposal_passed": True,
+            "proposal_votes_number": len(self.token_amounts),
+            "calculated_deposit": self.args.proposal_deposit,
+            "onetime_costs": self.args.offer_onetime_costs,
+            "deposit_returned": True,
+            "offer_promise_valid": True
+        })
 
     def run_test_none(self):
         print("No test scenario provided.")

@@ -11,20 +11,38 @@ web3.miner.setEtherbase(eth.accounts[5]);
 
 var serviceProvider = eth.accounts[0];
 var proposalCreator = eth.accounts[1];
+var testMap = {};
 
 function checkWork() {
     miner.start(1);
+    // console.log("Creator Balance: web3.fromWei(eth.getBalance(proposalCreator)));
     admin.sleepBlocks(3);
     miner.stop(0);
 }
 
+function bigDiff(astr, bstr) {
+    return Math.round((new BigNumber(astr)).minus(new BigNumber(bstr)));
+}
+
+function addToTest(name, value) {
+    testMap[name] = value;
+    console.log("'" + name + "' = " + value);
+}
+
+function testResults() {
+    console.log("Test Results: " + JSON.stringify(testMap));
+}
+
+
+
 var dao = web3.eth.contract($dao_abi).at('$dao_address');
+var offer = web3.eth.contract($offer_abi).at('$offer_address');
 
 console.log("Add offer contract as allowed recipient");
 dao.addAllowedAddress.sendTransaction('$offer_address', {from: serviceProvider, gas: 1000000});
 checkWork();
 
-console.log("CHECK(pCreatorBalanceStart): " + web3.fromWei(eth.getBalance(proposalCreator)));
+addToTest('creator_balance_before', web3.fromWei(eth.getBalance(proposalCreator)));
 console.log("Creating a new proposal for $offer_amount ether.");
 var tx_hash = null;
 dao.newProposal.sendTransaction(
@@ -36,7 +54,7 @@ dao.newProposal.sendTransaction(
     false,
     {
         from: proposalCreator,
-        value: web3.toWei(21, "ether"), // default proposal deposit is 20 ether
+        value: web3.toWei($proposal_deposit, "ether"),
         gas: 1000000
     }
     , function (e, res) {
@@ -50,8 +68,12 @@ dao.newProposal.sendTransaction(
 );
 checkWork();
 
-console.log("CHECK(pCreatorBalanceAfterProposal): " + web3.fromWei(eth.getBalance(proposalCreator)));
-console.log("CHECK(dao.numberOfProposals): " + dao.numberOfProposals());
+addToTest('creator_balance_after_proposal', web3.fromWei(eth.getBalance(proposalCreator)));
+addToTest(
+    'calculated_deposit',
+    bigDiff(testMap['creator_balance_before'], testMap['creator_balance_after_proposal'])
+);
+addToTest('dao_proposals_number', dao.numberOfProposals());
 
 var votes = $votes;
 var prop_id = 0;
@@ -69,8 +91,8 @@ for (i = 0; i < votes.length; i++) {
     );
 }
 checkWork();
-console.log("CHECK(proposal.numberOfVotes): " + dao.numberOfVotes(prop_id));
-console.log("CHECK(serviceProviderbalancebefore): " + web3.fromWei(eth.getBalance(serviceProvider)));
+addToTest('proposal_votes_number', parseInt(dao.numberOfVotes(prop_id)));
+addToTest('provider_balance_before', web3.fromWei(eth.getBalance(serviceProvider)));
 
 setTimeout(function() {
     miner.stop(0);
@@ -79,10 +101,22 @@ setTimeout(function() {
     dao.executeProposal.sendTransaction(prop_id, '$transaction_bytecode', {from:serviceProvider, gas:1000000});
     checkWork();
 
-    
-    console.log("CHECK(proposal.passed): " + dao.proposals(prop_id)[5]); // 5th member of the structure is proposalPassed
-    console.log("CHECK(pCreatorBalanceAfterExecution): " + web3.fromWei(eth.getBalance(proposalCreator)));
-    console.log("CHECK(serviceProviderbalanceafter): " + web3.fromWei(eth.getBalance(serviceProvider)));
+    // 5th member of the structure is proposalPassed
+    addToTest('proposal_passed', dao.proposals(prop_id)[5]);
+    addToTest('creator_balance_after_execution', web3.fromWei(eth.getBalance(proposalCreator)));
+    addToTest('provider_balance_after', web3.fromWei(eth.getBalance(serviceProvider)));
+
+    addToTest(
+        'onetime_costs',
+        bigDiff(testMap['provider_balance_after'], testMap['provider_balance_before'])
+    );
+    addToTest(
+        'deposit_returned',
+        Math.round(testMap['creator_balance_after_execution']) == Math.round(testMap['creator_balance_before'])
+    );
+    addToTest('offer_promise_valid', offer.promiseValid());
+
+    testResults();
 }, $debating_period * 1000);
 console.log("Wait for end of debating period");
 miner.start(1);

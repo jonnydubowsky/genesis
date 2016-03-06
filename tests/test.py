@@ -14,8 +14,9 @@ import re
 import random
 from utils import (
     constrained_sum_sample_pos, rm_file, determine_binary, ts_now,
-    seconds_in_future, create_votes_array, bools_str
+    seconds_in_future, create_votes_array, bools_str, eval_test
 )
+from jsutils import js_common_intro
 from args import test_args
 
 
@@ -87,25 +88,6 @@ class TestContext():
             self.tests_ok = False
             print("    Expected '{}' but got '{}'".format(expect, got))
         return res
-
-    def test(self, testname, output, expected_dict):
-        results = json.loads(output.split('Test Results: ', 1)[1])
-        for k, v in expected_dict.iteritems():
-            if k not in results:
-                self.tests_ok = False
-                print("Did not find '{}' in the test results".format(k))
-                continue
-            if results[k] != v:
-                self.tests_ok = False
-                print("'Expected {} for '{}' but got {}".format(
-                    v, k, results[k]
-                ))
-
-        if self.tests_ok:
-            print("Tests for '{}' PASSED!".format(testname))
-        else:
-            print("Tests for '{}' FAILED!".format(testname))
-            sys.exit(1)
 
     def run_script(self, script):
         print("Running '{}' script".format(script))
@@ -343,7 +325,7 @@ class TestContext():
             votes=bools_str(votes)
         )
         with open("proposal.js", "w") as f:
-            f.write(s)
+            f.write("{}\n{}".format(js_common_intro(), s))
 
     def run_test_proposal(self):
         if not self.token_amounts:
@@ -363,7 +345,7 @@ class TestContext():
             "as much".format(debate_secs)
         )
         output = self.run_script('proposal.js')
-        self.test('proposal.js', output, {
+        eval_test('proposal.js', output, {
             "dao_proposals_number": "1",
             "proposal_passed": True,
             "proposal_votes_number": len(self.token_amounts),

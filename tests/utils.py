@@ -2,6 +2,8 @@
 import calendar
 import random
 import os
+import json
+import sys
 from datetime import datetime
 
 
@@ -88,3 +90,30 @@ def create_votes_array(amounts, succeed):
 
 def bools_str(arr):
     return '[ ' + ', '.join([str(x).lower() for x in arr]) + ' ]'
+
+
+def eval_test(name, output, expected_dict):
+    tests_fail = False
+    results = json.loads(output.split('Test Results: ', 1)[1])
+
+    if len(results) != 2:
+        print("Could not parse '{}' output properly. Output was:\n{}".format(
+            name, output
+        ))
+
+    for k, v in expected_dict.iteritems():
+        if k not in results:
+            tests_fail = True
+            print("Did not find '{}' in the test results".format(k))
+            continue
+        if results[k] != v:
+            tests_fail = True
+            print("'Expected {} for '{}' but got {}".format(
+                v, k, results[k]
+            ))
+
+    if not tests_fail:
+        print("Tests for '{}' PASSED!".format(name))
+    else:
+        print("Tests for '{}' FAILED!".format(name))
+        sys.exit(1)

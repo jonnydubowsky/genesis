@@ -52,6 +52,18 @@ def test_args():
         help='If given, then in the proposal scenario the voting will fail'
     )
     p.add_argument(
+        '--offer-onetime-costs',
+        type=int,
+        help='The one time costs (in ether) in the offer to the DAO',
+        default=5
+    )
+    p.add_argument(
+        '--offer-total-costs',
+        type=int,
+        help='The total costs (in ether) in the offer to the DAO',
+        default=10
+    )
+    p.add_argument(
         '--scenario',
         choices=['none', 'deploy', 'fund', 'proposal'],
         default='none',

@@ -172,6 +172,8 @@ class TestContext():
             creator_bin=self.creator_bin,
             offer_abi=self.offer_abi,
             offer_bin=self.offer_bin,
+            offer_onetime=self.args.offer_onetime_costs,
+            offer_total=self.args.offer_total_costs,
             min_value=self.min_value,
             closing_time=self.closing_time
         )
@@ -340,7 +342,25 @@ class TestContext():
             "as much".format(debate_secs)
         )
         output = self.run_script('proposal.js')
-        print("PROPOSAL.JS output:\n{}".format(output))
+        r = re.compile(
+            r'CHECK(pCreatorBalanceStart):(?P<creatorStart>.*?)\n.*'
+            'CHECK(pCreatorBalanceAfterProposal):(?P<creatorAfterProposal>.*?)\n.*'
+            'CHECK(dao.numberOfProposals):(?P<numberOfProposals>.*?)\n.*'
+            'CHECK\(proposal.numberOfVotes\): (?P<numberOfVotes>.*?)\n.*'
+            'CHECK\(serviceProviderbalancebefore\): (?P<providerBalanceBefore>.*?)\n.*'
+            'CHECK\(proposal.passed\): (?P<proposalPassed>.*?)\n.*'
+            'CHECK\(pCreatorBalanceAfterExecution\): (?P<creatorAfterExecution>.*?)\n.*'
+            'CHECK\(serviceProviderbalanceafter\): (?P<providerBalanceAfter>.*?)\n.*',
+            flags=re.MULTILINE | re.DOTALL
+        )
+        m = r.search(output)
+        if not m:
+            print(
+                "Error: Could not parse proposal.js output properly.Output was:\n"
+                "{}".format(output)
+            )
+            sys.exit(1)
+        print(m.groups())
 
     def run_test_none(self):
         print("No test scenario provided.")

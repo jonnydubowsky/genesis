@@ -59,7 +59,7 @@ var prop_id = 0;
 
 console.log("Deadline is: " + dao.proposals(prop_id)[3] + " Voting ... ");
 for (i = 0; i < votes.length; i++) {
-    console.log("User " + i +" is voting ["+ votes[i] +"]. His balance is: " + dao.balanceOf(eth.accounts[i]) + " and NOW is: " + Math.floor(Date.now() / 1000));
+    console.log("User " + i +" is voting ["+ votes[i] +"]. His balance is: " + web3.fromWei(dao.balanceOf(eth.accounts[i])) + " ether and NOW is: " + Math.floor(Date.now() / 1000));
     dao.vote.sendTransaction(
         prop_id,
         votes[i],
@@ -71,7 +71,6 @@ for (i = 0; i < votes.length; i++) {
 }
 checkWork();
 console.log("CHECK(proposal.numberOfVotes): " + dao.numberOfVotes(prop_id));
-console.log("CHECK(minquorum.proposal.amount): " + dao.minQuorum(web3.toWei($offer_amount, "ether")));
 
 setTimeout(function() {
     miner.stop(0);
@@ -80,7 +79,7 @@ setTimeout(function() {
     dao.executeProposal.sendTransaction(prop_id, '$transaction_bytecode', {from:eth.accounts[0], gas:1000000});
     checkWork();
 
-    console.log("CHECK(proposal.passed): " + dao.proposals(prop_id)[5]); // 5th member of the structure is the proposal passed thing
+    console.log("CHECK(proposal.passed): " + dao.proposals(prop_id)[5]); // 5th member of the structure is proposalPassed
 }, $debating_period * 1000);
 console.log("Wait for end of debating period");
 miner.start(1);

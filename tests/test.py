@@ -134,7 +134,6 @@ class TestContext():
                 contents = f.read()
             contents = contents.replace(" || _debatingPeriod < 1 weeks", "")
             contents = contents.replace(" || (_debatingPeriod < 2 weeks)", "")
-            contents = contents.replace("internal", "public")
 
             new_path = os.path.join(self.contracts_dir, "DAOcopy.sol")
             with open(new_path, "w") as f:
@@ -329,7 +328,7 @@ class TestContext():
             self.run_test_fund()
 
         debate_secs = 20
-        minamount = 2  # should be determined by the total costs + one time costs
+        minamount = 2  # is determined by the total costs + one time costs
         amount = random.randint(minamount, sum(self.token_amounts))
         votes = create_votes_array(
             self.token_amounts,

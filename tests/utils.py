@@ -77,11 +77,12 @@ def create_votes_array(amounts, succeed):
     else:
         for val in amounts:
             ratio = val/float(total)
-            if (percentage + ratio >= 0.5):
-                votes.append(False)
-            else:
+            if percentage <= 0.5:
                 votes.append(True)
                 percentage += ratio
+            else:
+                votes.append(False)
+
     return votes
 
 

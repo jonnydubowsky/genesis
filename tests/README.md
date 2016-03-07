@@ -5,16 +5,18 @@
 For the full array of arguments available run `test.py --help`
 
 ```
-usage: test.py [-h] [--solc SOLC] [--geth GETH] [--clean-chain] [--verbose]
-               [--closing-time CLOSING_TIME] [--min-value MIN_VALUE]
-               [--scenario {none,deploy,fund}]
+usage: test.py [-h] [--solc SOLC] [--geth GETH] [--keep-limits]
+               [--clean-chain] [--verbose] [--closing-time CLOSING_TIME]
+               [--min-value MIN_VALUE] [--scenario {none,deploy,fund}]
 
-DAO contracts test helper
+DAO contracts test framework
 
 optional arguments:
   -h, --help            show this help message and exit
   --solc SOLC           Full path to the solc binary to use
   --geth GETH           Full path to the geth binary to use
+  --keep-limits         If given then the debate limits of the original
+                        contracts will not be removed
   --clean-chain         If given then the blockchain is deleted before any
                         test scenario is executed
   --verbose             If given then all test checks are printed in the

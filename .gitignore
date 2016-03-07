@@ -8,7 +8,10 @@ tests/data/history
 tests/data/saved
 tests/out.log.geth
 
-
 # Ignore created javascript files
 tests/deploy.js
 tests/fund.js
+tests/proposal.js
+
+# python metadata in tests
+tests/*.pyc

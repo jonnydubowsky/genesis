@@ -356,7 +356,8 @@ contract DAO is DAOInterface, Token, TokenSale {
             || now > p.votingDeadline + 41 days
             || p.recipient != _newServiceProvider // Does the new service provider address match?
             || !p.newServiceProvider // is it a new service provider proposal?
-            || !p.votedYes[msg.sender])
+            || !p.votedYes[msg.sender] // have you voted for this split?
+            || blocked[msg.sender] != _proposalID) // did you already vote on another proposal?
             throw;
 
         // if not already happened, create a new DAO and store the current split data

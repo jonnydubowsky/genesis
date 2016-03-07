@@ -84,9 +84,9 @@ contract DAOInterface {
         bool newServiceProvider;
         // Data needed for splitting the DAO
         SplitData[] splitData;
-        // yay
+        // number of tokens in favour of the proposal
         uint yea;
-        // nay
+        // number of tokens opposed to the proposal
         uint nay;
         // Simple mapping to check if a shareholder has voted for it
         mapping (address => bool) votedYes;

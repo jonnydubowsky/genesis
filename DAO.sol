@@ -294,7 +294,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
         if (blocked[msg.sender] == 0)
             blocked[msg.sender] = _proposalID;
-        else if (p.votingDeadline > proposals[blocked[msg.sender]].votingDeadline)
+        else if (p.votingDeadline > proposals[blocked[msg.sender]].votingDeadline) // check whether this proposal has a longer voting time left than the another existing proposal voted on.
             blocked[msg.sender] = _proposalID;
 
         Voted(_proposalID, _supportsProposal, msg.sender);

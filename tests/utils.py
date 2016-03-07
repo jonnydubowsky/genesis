@@ -97,19 +97,21 @@ def eval_test(name, output, expected_dict):
     tests_fail = False
     split = output.split('Test Results: ', 1)
     if len(split) != 2:
-        print("Could not parse '{}' output properly. Output was:\n{}".format(
-            name, output
-        ))
+        print("ERROR: Could not parse '{}' output properly.\n"
+              "Output was:\n{}".format(
+                  name, output
+              ))
+        sys.exit(1)
     results = json.loads(split[1])
 
     for k, v in expected_dict.iteritems():
         if k not in results:
             tests_fail = True
-            print("Did not find '{}' in the test results".format(k))
+            print("ERROR: Did not find '{}' in the test results".format(k))
             continue
         if results[k] != v:
             tests_fail = True
-            print("'Expected {} for '{}' but got {}".format(
+            print("ERROR: Expected {} for '{}' but got {}".format(
                 v, k, results[k]
             ))
 

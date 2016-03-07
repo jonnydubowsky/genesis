@@ -37,13 +37,13 @@ def test_args():
     p.add_argument(
         '--closing-time',
         type=int,
-        help='Number of minutes from now when the newly created DAO sale ends',
-        default=120
+        help='Number of seconds from now when the newly created DAO sale ends',
+        default=25
     )
     p.add_argument(
         '--min-value',
         type=int,
-        help='Minimum value to consider the DAO crowdfunded',
+        help='Minimum value in Ether to consider the DAO crowdfunded',
         default=20
     )
     p.add_argument(

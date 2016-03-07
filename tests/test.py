@@ -33,7 +33,7 @@ class TestContext():
         self.solc = determine_binary(args.solc, 'solc')
         self.geth = determine_binary(args.geth, 'geth')
 
-        self.closing_time = seconds_in_future(args.closing_time * 60)
+        self.closing_time = seconds_in_future(args.closing_time)
         self.min_value = args.min_value
         self.test_scenarios = {
             'none': self.run_test_none,
@@ -214,14 +214,10 @@ class TestContext():
         write_js('fund.js', s)
 
     def run_test_fund(self):
-        sale_secs = 20
-        # if deployment did not already happen do it now, with some predefined
-        # values for this scenario
+        # if deployment did not already happen do it now
         if not self.dao_addr:
-            self.closing_time = seconds_in_future(sale_secs)
             self.run_test_deploy()
         else:
-            sale_secs = self.closing_time - ts_now()
             print(
                 "WARNING: Running the funding scenario with a pre-deployed "
                 "DAO contract. Closing time is {} which is approximately {} "
@@ -229,9 +225,11 @@ class TestContext():
                     datetime.fromtimestamp(self.closing_time).strftime(
                         '%Y-%m-%d %H:%M:%S'
                     ),
-                    sale_secs
+                    self.closing_time - ts_now()
                 )
             )
+
+        sale_secs = self.closing_time - ts_now()
         total_amount = self.min_value + random.randint(1, 100)
         self.token_amounts = constrained_sum_sample_pos(7, total_amount)
         self.create_fund_js(sale_secs, self.token_amounts)

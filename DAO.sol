@@ -487,7 +487,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function unblock(address _account) {
+    function unblock() {
         if (blocked[msg.sender] == 0) return;
         Proposal p = proposals[blocked[msg.sender]];
         if (!p.open)

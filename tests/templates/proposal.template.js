@@ -39,7 +39,7 @@ addToTest(
 addToTest('dao_proposals_number', dao.numberOfProposals());
 
 var votes = $votes;
-var prop_id = 0;
+var prop_id = 1;
 
 console.log("Deadline is: " + dao.proposals(prop_id)[3] + " Voting ... ");
 for (i = 0; i < votes.length; i++) {
@@ -54,7 +54,8 @@ for (i = 0; i < votes.length; i++) {
     );
 }
 checkWork();
-addToTest('proposal_votes_number', parseInt(dao.numberOfVotes(prop_id)));
+addToTest('proposal_yay', parseInt(web3.fromWei(dao.proposals(prop_id)[9])));
+addToTest('proposal_nay', parseInt(web3.fromWei(dao.proposals(prop_id)[10])));
 addToTest('provider_balance_before', web3.fromWei(eth.getBalance(serviceProvider)));
 
 setTimeout(function() {

@@ -126,3 +126,15 @@ def write_js(name, contents):
     """Write a javascript file from a template, prepending common intro"""
     with open(name, "w") as f:
             f.write("{}\n{}".format(js_common_intro(), contents))
+
+
+def count_token_votes(amounts, votes):
+    """Returns how many tokens votes yay and how many voted nay"""
+    yay = 0
+    nay = 0
+    for idx, amount in enumerate(amounts):
+        if votes[idx]:
+            yay += amount
+        else:
+            nay += amount
+    return yay, nay

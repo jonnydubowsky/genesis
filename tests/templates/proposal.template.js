@@ -54,7 +54,8 @@ for (i = 0; i < votes.length; i++) {
     );
 }
 checkWork();
-addToTest('proposal_votes_number', parseInt(dao.numberOfVotes(prop_id)));
+addToTest('proposal_yay', parseInt(dao.proposals(prop_id)[9]));
+addToTest('proposal_nay', parseInt(dao.proposals(prop_id)[10]));
 addToTest('provider_balance_before', web3.fromWei(eth.getBalance(serviceProvider)));
 
 setTimeout(function() {

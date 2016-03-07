@@ -14,7 +14,8 @@ import re
 import random
 from utils import (
     constrained_sum_sample_pos, rm_file, determine_binary, ts_now,
-    seconds_in_future, create_votes_array, arr_str, eval_test, write_js
+    seconds_in_future, create_votes_array, arr_str, eval_test, write_js,
+    count_token_votes
 )
 from args import test_args
 
@@ -279,6 +280,7 @@ class TestContext():
             self.token_amounts,
             not self.args.proposal_fail
         )
+        yay, nay = count_token_votes(self.token_amounts, votes)
         self.create_proposal_js(amount, debate_secs, votes)
         print(
             "Notice: Debate period is {} seconds so the test will wait "
@@ -288,7 +290,8 @@ class TestContext():
         eval_test('proposal.js', output, {
             "dao_proposals_number": "1",
             "proposal_passed": True,
-            "proposal_votes_number": len(self.token_amounts),
+            "proposal_yay": yay,
+            "proposal_nay": nay,
             "calculated_deposit": self.args.proposal_deposit,
             "onetime_costs": self.args.offer_onetime_costs,
             "deposit_returned": True,

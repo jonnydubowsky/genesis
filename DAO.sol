@@ -400,7 +400,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transfer(address _to, uint256 _value) returns (bool success) {
-        if (isFunded && now > closingTime && blocked[msg.sender] == 0 && transferPaidOut(msg.sender, _to, _value) && super.transfer(_to, _value)) {
+        if (isFunded && now > closingTime && !isBlocked(msg.sender) && transferPaidOut(msg.sender, _to, _value) && super.transfer(_to, _value)) {
             return true;
         }
         else throw;
@@ -414,7 +414,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-        if (isFunded && now > closingTime && blocked[_from] == 0 && transferPaidOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)) {
+        if (isFunded && now > closingTime && !isBlocked(_from) && transferPaidOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)) {
             return true;
         }
         else throw;
@@ -487,11 +487,15 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function unblock() {
-        if (blocked[msg.sender] == 0) return;
-        Proposal p = proposals[blocked[msg.sender]];
-        if (!p.open)
-            blocked[msg.sender] = 0;
+    function isBlocked(address _account) returns (bool){
+        if (blocked[_account] == 0) return false;
+        Proposal p = proposals[blocked[_account]];
+        if (!p.open){
+            blocked[_account] = 0;
+            return false;
+        }
+        else
+            return true;
     }
 }
 

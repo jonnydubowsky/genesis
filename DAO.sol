@@ -51,6 +51,8 @@ contract DAOInterface {
     ManagedAccount public rewardAccount;
     // amount of wei already payed out to a certain member address
     mapping (address => uint) public paidOut;
+    // map of address blocked during a vote (not allowed to transfer tokens). The address points to the proposal ID.
+    mapping (address => uint) public blocked;
 
     // deposit in wei to be held for each proposal
     uint public proposalDeposit;
@@ -82,10 +84,14 @@ contract DAOInterface {
         bool newServiceProvider;
         // Data needed for splitting the DAO
         SplitData[] splitData;
-        // Array holding all votes that have taken place on the proposal
-        Vote[] votes;
-        // Simple mapping to check if a shareholder has already cast a vote
-        mapping (address => bool) voted;
+        // yay
+        uint yea;
+        // nay
+        uint nay;
+        // Simple mapping to check if a shareholder has voted for it
+        mapping (address => bool) votedYes;
+        // Simple mapping to check if a shareholder has voted against it
+        mapping (address => bool) votedNo;
         // Address of the shareholder who created the proposal
         address creator;
     }
@@ -100,13 +106,6 @@ contract DAOInterface {
         uint rewardToken;
         // the new DAO contract created at the time of split.
         DAO newDAO;
-    }
-
-    struct Vote {
-        // True for 'yay', false for 'nay'
-        bool inSupport;
-        // The address of the voter
-        address voter;
     }
 
     modifier onlyTokenholders {}
@@ -222,6 +221,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         rewardAccount = new ManagedAccount(address(this));
         lastTimeMinQuorumMet = now;
         minQuorumDivisor = 5; // sets the minimal quorum to 20%
+        proposals.length++; // in order to avoid a proposal with ID 0 because this is used in `blocked`.
         if (address(rewardAccount) == 0) throw;
     }
 
@@ -281,11 +281,22 @@ contract DAO is DAOInterface, Token, TokenSale {
 
     function vote(uint _proposalID, bool _supportsProposal) onlyTokenholders noEther returns (uint _voteID) {
         Proposal p = proposals[_proposalID];
-        if (p.voted[msg.sender] || now >= p.votingDeadline) throw;
+        if (p.votedYes[msg.sender] || p.votedNo[msg.sender] || now >= p.votingDeadline) throw;
 
-        _voteID = p.votes.length++;
-        p.votes[_voteID] = Vote({inSupport: _supportsProposal, voter: msg.sender});
-        p.voted[msg.sender] = true;
+        if (_supportsProposal){
+            p.yea += balances[msg.sender];
+            p.votedYes[msg.sender] = true;
+        }
+        else{
+            p.nay += balances[msg.sender];
+            p.votedNo[msg.sender] = true;
+        }
+
+        if (blocked[msg.sender] == 0)
+            blocked[msg.sender] = _proposalID;
+        else if (p.votingDeadline > proposals[blocked[msg.sender]].votingDeadline)
+            blocked[msg.sender] = _proposalID;
+
         Voted(_proposalID, _supportsProposal, msg.sender);
     }
 
@@ -295,26 +306,18 @@ contract DAO is DAOInterface, Token, TokenSale {
         // Check if the proposal can be executed
         if (now < p.votingDeadline  // has the voting deadline arrived?
             || !p.open        // have the votes been counted?
-            || p.newServiceProvider // new service provider proposal get confirmed not executed
             || p.proposalHash != sha3(p.recipient, p.amount, _transactionData)) // Does the transaction code match the proposal?
             throw;
 
-        // tally the votes
-        uint yea = 0;
-        uint nay = 0;
-
-        for (uint i = 0; i < p.votes.length; ++i) { //DANGER - unbound loop
-            Vote v = p.votes[i];
-            uint voteWeight = balanceOf(v.voter);
-            if (v.inSupport)
-                yea += voteWeight;
-            else
-                nay += voteWeight;
+        if (p.newServiceProvider){
+            p.open = false;
+            return;
         }
-        uint quorum = yea + nay;
+
+        uint quorum = p.yea + p.nay;
 
         // execute result
-        if (quorum >= minQuorum(p.amount) && yea > nay) {
+        if (quorum >= minQuorum(p.amount) && p.yea > p.nay) {
             if (!p.creator.send(p.proposalDeposit)) throw;
             // Without this throw, the creator of the proposal can repeat this, and get so much fund.
             if (!p.recipient.call.value(p.amount)(_transactionData)) throw;
@@ -331,7 +334,7 @@ contract DAO is DAOInterface, Token, TokenSale {
                 totalRewardToken += p.amount;
             }
         }
-        else if (quorum >= minQuorum(p.amount) && nay >= yea) {
+        else if (quorum >= minQuorum(p.amount) && p.nay >= p.yea) {
             if (!p.creator.send(p.proposalDeposit)) throw;
             lastTimeMinQuorumMet = now;
         }
@@ -351,7 +354,8 @@ contract DAO is DAOInterface, Token, TokenSale {
         if (now < p.votingDeadline  // has the voting deadline arrived?
             || now > p.votingDeadline + 41 days
             || p.recipient != _newServiceProvider // Does the new service provider address match?
-            || !p.newServiceProvider) // is it a new service provider proposal?
+            || !p.newServiceProvider // is it a new service provider proposal?
+            || !p.votedYes[msg.sender])
             throw;
 
         // if not already happened, create a new DAO and store the current split data
@@ -396,7 +400,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transfer(address _to, uint256 _value) returns (bool success) {
-        if (isFunded && now > closingTime && transferPaidOut(msg.sender, _to, _value) && super.transfer(_to, _value)) {
+        if (isFunded && now > closingTime && blocked[msg.sender] == 0 && transferPaidOut(msg.sender, _to, _value) && super.transfer(_to, _value)) {
             return true;
         }
         else throw;
@@ -410,7 +414,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-        if (isFunded && now > closingTime && transferPaidOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)) {
+        if (isFunded && now > closingTime && blocked[_from] == 0 && transferPaidOut(_from, _to, _value) && super.transferFrom(_from, _to, _value)) {
             return true;
         }
         else throw;
@@ -483,8 +487,11 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function numberOfVotes(uint _proposalID) constant returns (uint _numberOfVotes) {
-        return proposals[_proposalID].votes.length;
+    function unblock(address _account) {
+        if (blocked[msg.sender] == 0) return;
+        Proposal p = proposals[blocked[msg.sender]];
+        if (!p.open)
+            blocked[msg.sender] = 0;
     }
 }
 

@@ -485,7 +485,8 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function numberOfProposals() constant returns (uint _numberOfProposals) {
-        return proposals.length;
+        // Don't count index 0. It's used by isBlocked() and exists from start
+        return proposals.length - 1;
     }
 
 

@@ -97,19 +97,21 @@ def eval_test(name, output, expected_dict):
     tests_fail = False
     split = output.split('Test Results: ', 1)
     if len(split) != 2:
-        print("Could not parse '{}' output properly. Output was:\n{}".format(
-            name, output
-        ))
+        print("ERROR: Could not parse '{}' output properly.\n"
+              "Output was:\n{}".format(
+                  name, output
+              ))
+        sys.exit(1)
     results = json.loads(split[1])
 
     for k, v in expected_dict.iteritems():
         if k not in results:
             tests_fail = True
-            print("Did not find '{}' in the test results".format(k))
+            print("ERROR: Did not find '{}' in the test results".format(k))
             continue
         if results[k] != v:
             tests_fail = True
-            print("'Expected {} for '{}' but got {}".format(
+            print("ERROR: Expected {} for '{}' but got {}".format(
                 v, k, results[k]
             ))
 
@@ -124,3 +126,15 @@ def write_js(name, contents):
     """Write a javascript file from a template, prepending common intro"""
     with open(name, "w") as f:
             f.write("{}\n{}".format(js_common_intro(), contents))
+
+
+def count_token_votes(amounts, votes):
+    """Returns how many tokens votes yay and how many voted nay"""
+    yay = 0
+    nay = 0
+    for idx, amount in enumerate(amounts):
+        if votes[idx]:
+            yay += amount
+        else:
+            nay += amount
+    return yay, nay

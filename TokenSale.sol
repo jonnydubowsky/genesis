@@ -54,6 +54,10 @@ contract TokenSale is TokenSaleInterface, Token {
         privateSale = _privateSale;
     }
 
+    function () returns (bool success) {
+        return buyTokenProxy(msg.sender);
+    }
+
     function buyTokenProxy(address _tokenHolder) returns (bool success) {
         if (now < closingTime && msg.value > 0 && (privateSale == 0 || privateSale == msg.sender)) {
             uint token = msg.value;
@@ -72,7 +76,7 @@ contract TokenSale is TokenSaleInterface, Token {
     function refund() noEther {
         if (now > closingTime
             && !isFunded
-            && msg.sender.send(balances[msg.sender])) // execute refund
+            && msg.sender.call.value(balances[msg.sender])()) // execute refund
         {
             Refund(msg.sender, balances[msg.sender]);
             totalSupply -= balances[msg.sender];

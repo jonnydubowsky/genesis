@@ -226,18 +226,12 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function () returns (bool success) {
-        // The first clause is needed for a split DAO to receive its rewards of the parent DAO. The 40 days are a safety measure.
-        // No new DAO can be created within this time, and in the case people accidentally send ether to the DAO Token Sale, it will bounce back in the buyTokenProxy function
-        if (now > closingTime + 40 days)
-            return payDAO();
-        else
-            return buyTokenProxy(msg.sender);
+    function payDAO() returns (bool) {
+        rewards += msg.value;
+        return true;
     }
 
-
-    function payDAO() returns(bool) {
-        rewards += msg.value;
+    function receiveEther() returns (bool) {
         return true;
     }
 

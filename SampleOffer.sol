@@ -77,7 +77,7 @@ contract SampleOffer
             promiseValid = false;
     }
     function returnRemainingMoney() onlyClient {
-        if (client.send(this.balance))
+        if (client.receiveEther.value(this.balance)())
             promiseValid = false;        
     }
 
@@ -113,7 +113,7 @@ contract SampleOffer
     }
 
     // pay reward
-    function () returns(bool) {
+    function payReward() returns(bool) {
         if (promiseValid) {
             if (client.payDAO.value(msg.value)()) return true;
             else throw;

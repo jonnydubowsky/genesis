@@ -177,7 +177,12 @@ contract DAOInterface {
     function changeProposalDeposit(uint _proposalDeposit) external;
 
     /// @notice get my portion of the reward which has been sent to `rewardAccount`
-    function getMyReward();
+    /// @return Whether the call was successful
+    function getMyReward() returns(bool _success);
+
+    /// @notice withdraw `account`'s portion of the reward which has been sent to `rewardAccount`, to `account`'s balance
+    /// @return Whether the call was successful
+    function withdrawRewardFor(address _account) returns(bool _success);
 
     /// @notice send `_amount` tokens to `_to` from `msg.sender`. Prior to this getMyReward() is called.
     /// @param _to The address of the recipient
@@ -386,12 +391,18 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function getMyReward() noEther {
-        // my portion of the rewardToken of this DAO, or when called by a split child DAO, their portion of the rewardToken.
-        uint myPortionOfTheReward = (balanceOf(msg.sender) * rewardToken[address(this)]) / totalSupply + rewardToken[msg.sender];
-        uint myReward = (myPortionOfTheReward * rewardAccount.accumulatedInput()) / totalRewardToken - paidOut[msg.sender];
-        if (!rewardAccount.payOut(msg.sender, myReward)) throw;
-        paidOut[msg.sender] += myReward;
+    function getMyReward() noEther returns (bool _success) {
+        return withdrawRewardFor(msg.sender);
+    }
+
+
+    function withdrawRewardFor(address _account) noEther returns (bool _success) {
+        // the account's portion of the rewardToken of this DAO, or when called by a split child DAO, their portion of the rewardToken.
+        uint portionOfTheReward = (balanceOf(_account) * rewardToken[address(this)]) / totalSupply + rewardToken[_account];
+        uint reward = (portionOfTheReward * rewardAccount.accumulatedInput()) / totalRewardToken - paidOut[_account];
+        if (!rewardAccount.payOut(_account, reward)) throw;
+        paidOut[_account] += reward;
+        return true;
     }
 
 
@@ -404,7 +415,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transferWithoutReward(address _to, uint256 _value) returns (bool success) {
-        getMyReward();
+        if (!getMyReward()) throw;
         return transfer(_to, _value);
     }
 
@@ -418,7 +429,7 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transferFromWithoutReward(address _from, address _to, uint256 _value) returns (bool success) {
-        getMyReward();
+        if (!withdrawRewardFor(_from)) throw;
         return transferFrom(_from, _to, _value);
     }
 

@@ -17,28 +17,37 @@ along with the DAO.  If not, see <http://www.gnu.org/licenses/>.
 
 
 /*
-Token Sale contract, used by the DAO to raise its funding goal
+Token Sale contract, used by the DAO to sell its tokens and initialize its fund
 */
 
 import "./Token.sol";
 
 
 contract TokenSaleInterface {
-    uint public closingTime;                   // end of token sale, in Unix time
-    uint public minValue;                      // minimum funding goal of the token sale, denominated in tokens
-    bool public isFunded;                      // true if DAO has reached its minimum funding goal, false otherwise
-    address public privateSale;                // used for DAO splits - if privateSale is 0, then it is a public sale, otherwise, only the address stored in privateSale is allowed to purchase tokens
-
-    /// @dev Constructor setting the minimum funding goal and the end of the Token Sale
+    
+    // End of token sale, in Unix time
+    uint public closingTime;   
+    // Minimum funding goal of the token sale, denominated in tokens
+    uint public minValue;  
+    // True if the DAO reached its minimum funding goal, false otherwise
+    bool public isFunded;   
+    // For DAO splits - if privateSale is 0, then it is a public sale, otherwise
+    // only the address stored in privateSale is allowed to purchase tokens
+    address public privateSale;               
+    
+    /// @dev Constructor setting the minimum funding goal and the 
+    /// end of the Token Sale
     /// @param _minValue Token Sale minimum funding goal
     /// @param _closingTime Date (in Unix time) of the end of the Token Sale
+    // This function will not likely be used so it is commented out
     //  function TokenSale(uint _minValue, uint _closingTime);
 
-    /// @notice buy Token with `_tokenHolder` as the address of the Token holder.
+    /// @notice Buy Token with `_tokenHolder` as the address to send the Token
     /// @param _tokenHolder The address of the Tokens's recipient 
     function buyTokenProxy(address _tokenHolder) returns (bool success);
 
-    /// @notice Refund `msg.sender` in the case the Token Sale didn't reach its minimum funding goal
+    /// @notice Refund `msg.sender` in the case the Token Sale didn't reach its 
+    /// minimum funding goal
     function refund();
 
     event FundingToDate(uint value);
@@ -48,14 +57,16 @@ contract TokenSaleInterface {
 
 
 contract TokenSale is TokenSaleInterface, Token {
-    function TokenSale(uint _minValue, uint _closingTime, address _privateSale) {
+    function TokenSale(uint _minValue, uint _closingTime, address _privateSale) 
+    {
         closingTime = _closingTime;
         minValue = _minValue;
         privateSale = _privateSale;
     }
 
     function buyTokenProxy(address _tokenHolder) returns (bool success) {
-        if (now < closingTime && msg.value > 0 && (privateSale == 0 || privateSale == msg.sender)) {
+        if (now < closingTime && msg.value > 0 && (privateSale == 0 
+        || privateSale == msg.sender)) {
             uint token = msg.value;
             balances[_tokenHolder] += token;
             totalSupply += token;
@@ -72,7 +83,7 @@ contract TokenSale is TokenSaleInterface, Token {
     function refund() noEther {
         if (now > closingTime
             && !isFunded
-            && msg.sender.send(balances[msg.sender])) // execute refund
+            && msg.sender.send(balances[msg.sender])) // Execute refund
         {
             Refund(msg.sender, balances[msg.sender]);
             totalSupply -= balances[msg.sender];

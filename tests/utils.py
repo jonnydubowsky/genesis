@@ -122,10 +122,28 @@ def eval_test(name, output, expected_dict):
         sys.exit(1)
 
 
-def write_js(name, contents):
+def write_js(name, contents, accounts_num):
     """Write a javascript file from a template, prepending common intro"""
     with open(name, "w") as f:
-            f.write("{}\n{}".format(js_common_intro(), contents))
+            f.write("{}\n{}".format(js_common_intro(accounts_num), contents))
+
+
+def create_genesis(accounts):
+    """Create a genesis block with ether allocation for the given accounts"""
+    genesis = {}
+    genesis["nonce"] = "0xdeadbeefdeadbeef"
+    genesis["timestamp"] = "0x0"
+    genesis["parentHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+    genesis["extraData"] = "0x0"
+    genesis["gasLimit"] = "0x8000000"
+    genesis["difficulty"] = "0x000000001"
+    genesis["mixhash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+    alloc = {}
+    for acc in accounts:
+        alloc[acc] = {"balance": "133700000000000000000000000000000000"}
+    genesis["alloc"] = alloc
+    with open('genesis_block.json', "w") as f:
+        f.write(json.dumps(genesis))
 
 
 def count_token_votes(amounts, votes):

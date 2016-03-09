@@ -15,7 +15,7 @@ import random
 from utils import (
     constrained_sum_sample_pos, rm_file, determine_binary, ts_now,
     seconds_in_future, create_votes_array, arr_str, eval_test, write_js,
-    count_token_votes
+    count_token_votes, create_genesis
 )
 from args import test_args
 
@@ -34,7 +34,6 @@ class TestContext():
         self.solc = determine_binary(args.solc, 'solc')
         self.geth = determine_binary(args.geth, 'geth')
 
-        self.closing_time = seconds_in_future(args.closing_time)
         self.min_value = args.min_value
         self.test_scenarios = {
             'none': self.run_test_none,
@@ -46,8 +45,26 @@ class TestContext():
         # keep this at end since any data loaded should override constructor
         if args.clean_chain:
             self.clean_blockchain()
+            self.create_accounts(args.users_num)
         else:
             self.attemptLoad()
+
+    def create_accounts(self, accounts_num):
+        print("Creating accounts and genesis block ...")
+        with open(
+                os.path.join(self.templates_dir, 'accounts.template.js'),
+                'r'
+        ) as f:
+            data = f.read()
+        tmpl = Template(data)
+        s = tmpl.substitute(accounts_number=accounts_num)
+        with open('accounts.js', "w") as f:
+            f.write(s)
+        output = self.run_script('accounts.js')
+        self.accounts = json.loads(output)
+        # creating genesis block with a generous allocation for all accounts
+        create_genesis(self.accounts)
+        print("Done!")
 
     def attemptLoad(self):
         """
@@ -70,6 +87,7 @@ class TestContext():
         data_dir = os.path.join(self.tests_dir, "data")
         shutil.rmtree(os.path.join(data_dir, "chaindata"), ignore_errors=True)
         shutil.rmtree(os.path.join(data_dir, "dapp"), ignore_errors=True)
+        shutil.rmtree(os.path.join(data_dir, "keystore"), ignore_errors=True)
         rm_file(os.path.join(data_dir, "nodekey"))
         rm_file(os.path.join(data_dir, "saved"))
 
@@ -144,6 +162,10 @@ class TestContext():
 
     def create_deploy_js(self):
         print("Creating 'deploy.js'...")
+        # Populate the closing time at deploy.js creation. If done earlier
+        # a lot of time may have passed since start of the script and timing
+        # may be way off (if too many accounts are being created)
+        self.closing_time = seconds_in_future(self.args.closing_time)
         with open(
                 os.path.join(self.templates_dir, 'deploy.template.js'),
                 'r'
@@ -212,7 +234,7 @@ class TestContext():
             wait_ms=(waitsecs-3)*1000,  # wait a little bit less, since a lot of time passed since creation
             amounts=arr_str(amounts)
         )
-        write_js('fund.js', s)
+        write_js('fund.js', s, len(self.accounts))
 
     def run_test_fund(self):
         # if deployment did not already happen do it now
@@ -232,7 +254,9 @@ class TestContext():
 
         sale_secs = self.closing_time - ts_now()
         total_amount = self.min_value + random.randint(1, 100)
-        self.token_amounts = constrained_sum_sample_pos(7, total_amount)
+        self.token_amounts = constrained_sum_sample_pos(
+            len(self.accounts), total_amount
+        )
         self.create_fund_js(sale_secs, self.token_amounts)
         print(
             "Notice: Funding period is {} seconds so the test will wait "
@@ -266,7 +290,7 @@ class TestContext():
             debating_period=debating_period,
             votes=arr_str(votes)
         )
-        write_js('proposal.js', s)
+        write_js('proposal.js', s, len(self.accounts))
 
     def run_test_proposal(self):
         if not self.token_amounts:

@@ -3,6 +3,8 @@ tests/data/chaindata/
 tests/data/dapp/
 tests/data/nodekey
 tests/data/history
+tests/data/keystore
+tests/genesis_block.json
 
 # Tests save files and output
 tests/data/saved
@@ -12,6 +14,7 @@ tests/out.log.geth
 tests/deploy.js
 tests/fund.js
 tests/proposal.js
+tests/accounts.js
 
 # python metadata in tests
 tests/*.pyc

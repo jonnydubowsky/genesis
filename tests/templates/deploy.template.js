@@ -1,10 +1,5 @@
-// geth --networkid 123 --nodiscover --maxpeers 0 --genesis ./genesis_block.json --datadir ./data  js deploy.js 2>>out.log.geth
-
 console.log("unlocking account");
-personal.unlockAccount(
-    web3.eth.accounts[0],
-    "Write here a good, randomly generated, passphrase!"
-);
+personal.unlockAccount(web3.eth.accounts[0], "123");
 
 function checkWork() {
     if (eth.getBlock("pending").transactions.length > 0) {

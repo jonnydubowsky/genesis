@@ -1,18 +1,13 @@
 #!/usr/bin/python2
 
 
-def js_common_intro():
+def js_common_intro(accounts_num):
     """Common  functions, variables to add to all js scripts"""
-    return """console.log("unlocking accounts");
-personal.unlockAccount(eth.accounts[0], "Write here a good, randomly generated, passphrase!");
-personal.unlockAccount(eth.accounts[1], "Write here a good, randomly generated, passphrase!");
-personal.unlockAccount(eth.accounts[2], "Write here a good, randomly generated, passphrase!");
-personal.unlockAccount(eth.accounts[3], "Write here a good, randomly generated, passphrase!");
-personal.unlockAccount(eth.accounts[4], "Write here a good, randomly generated, passphrase!");
-personal.unlockAccount(eth.accounts[5], "Write here a good, randomly generated, passphrase!");
-personal.unlockAccount(eth.accounts[6], "Write here a good, randomly generated, passphrase!");
-// set coinbase to something other than service provider and proposal creator
-web3.miner.setEtherbase(eth.accounts[5]);
+    s = "console.log('unlocking accounts');\n"
+    for i in range(0, accounts_num):
+        s += "personal.unlockAccount(eth.accounts[{}], '123');\n".format(i)
+    s += """// set coinbase to something other than service provider and proposal creator
+web3.miner.setEtherbase(eth.accounts[2]);
 
 var serviceProvider = eth.accounts[0];
 var proposalCreator = eth.accounts[1];
@@ -37,3 +32,4 @@ function testResults() {
     console.log("Test Results: " + JSON.stringify(testMap));
 }
 """
+    return s

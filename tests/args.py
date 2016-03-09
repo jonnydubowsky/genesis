@@ -1,5 +1,6 @@
 #!/usr/bin/python2
 import argparse
+import sys
 
 
 def test_args():
@@ -70,9 +71,23 @@ def test_args():
         default=10
     )
     p.add_argument(
+        '--users-num',
+        type=int,
+        help='The number of user accounts to create for the scenarios.'
+        'Should be at least 3',
+        default=5
+    )
+    p.add_argument(
         '--scenario',
         choices=['none', 'deploy', 'fund', 'proposal'],
         default='none',
         help='Test scenario to play out'
     )
-    return p.parse_args()
+    args = p.parse_args()
+
+    # Argument verification
+    if args.users_num < 3:
+        print("ERROR: Tests need 3 or more users")
+        sys.exit(1)
+
+    return args

@@ -41,7 +41,7 @@ contract DAOInterface {
     address[] public allowedRecipients;
 
     // only used for splits, give DAOs without a balance the privilege to access their share of the rewards
-    // conceptually, rewardTokens represents a share of right to receive rewards that arise from the already spent fund.
+    // conceptually, rewardTokens represent a share of right to receive rewards that arise from the already spent fund.
     mapping (address => uint) public rewardToken;
     // sum of all rewardToken
     uint public totalRewardToken;
@@ -49,7 +49,7 @@ contract DAOInterface {
     // account used to manage the rewards which are to be distributed to the
     // DAO Token Holders (and reward token holders) separately, so they don't appear in `this.balance`
     ManagedAccount public rewardAccount;
-    // amount of wei already payed out to a certain member address
+    // amount of wei already paid out to a certain member address
     mapping (address => uint) public paidOut;
     // map of address blocked during a vote (not allowed to transfer tokens). The address points to the proposal ID.
     mapping (address => uint) public blocked;
@@ -116,6 +116,8 @@ contract DAOInterface {
     /// @param _daoCreator The contract able to (re)create this DAO
     /// @param _minValue Minimal value for a successful DAO Token Sale
     /// @param _closingTime Date (in unix time) of the end of the DAO Token Sale
+    /// @param _privateSale Zero means that the DAO Token Sale is open to public,
+    ///                     a non-zero address means that the DAO Token Sale is only for the address.
     //  function DAO(address _defaultServiceProvider, DAO_Creator _daoCreator, uint _minValue, uint _closingTime, address _privateSale)
 
     /// @notice Buy Token with `msg.sender` as the beneficiary as long as the DAO Token Sale is not closed, otherwise call receiveDAOReward().
@@ -124,6 +126,10 @@ contract DAOInterface {
     /// @dev function used to receive rewards as the DAO
     /// @return Whether the call to this function was successful or not
     function payDAO() returns(bool);
+
+    /// @dev function used to receive ether back to the management of DAO Token holders
+    /// @return Whether the DAO received the ether successfully
+    function receiveEther() returns(bool);
 
     /// @notice `msg.sender` creates a proposal to send `_amount` Wei to `_recipient` with the transaction data `_transactionData`.
     ///         (If `_newServiceProvider` is true, then this is a proposal that splits the DAO and sets `_recipient` as the new DAO's new service provider)

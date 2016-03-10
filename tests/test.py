@@ -92,23 +92,39 @@ class TestContext():
         rm_file(os.path.join(data_dir, "saved"))
 
     def run_script(self, script):
-        print("Running '{}' script".format(script))
-        return subprocess.check_output([
-            self.geth,
-            "--networkid",
-            "123",
-            "--nodiscover",
-            "--maxpeers",
-            "0",
-            "--genesis",
-            "./genesis_block.json",
-            "--datadir",
-            "./data",
-            "--verbosity",
-            "0",
-            "js",
-            script
-        ])
+        if script == 'accounts.js':
+            return subprocess.check_output([
+                self.geth,
+                "--networkid",
+                "123",
+                "--nodiscover",
+                "--maxpeers",
+                "0",
+                "--datadir",
+                "./data",
+                "--verbosity",
+                "0",
+                "js",
+                script
+            ])
+        else:
+            print("Running '{}' script".format(script))
+            return subprocess.check_output([
+                self.geth,
+                "--networkid",
+                "123",
+                "--nodiscover",
+                "--maxpeers",
+                "0",
+                "--genesis",
+                "./genesis_block.json",
+                "--datadir",
+                "./data",
+                "--verbosity",
+                "0",
+                "js",
+                script
+            ])
 
     def compile_contract(self, contract_path):
         print("    Compiling {}...".format(contract_path))
@@ -253,9 +269,9 @@ class TestContext():
             )
 
         sale_secs = self.closing_time - ts_now()
-        total_amount = self.min_value + random.randint(1, 100)
+        self.total_supply = self.min_value + random.randint(1, 100)
         self.token_amounts = constrained_sum_sample_pos(
-            len(self.accounts), total_amount
+            len(self.accounts), self.total_supply
         )
         self.create_fund_js(sale_secs, self.token_amounts)
         print(
@@ -265,7 +281,7 @@ class TestContext():
         output = self.run_script('fund.js')
         eval_test('fund.js', output, {
             "dao_funded": True,
-            "total_supply": total_amount,
+            "total_supply": self.total_supply,
             "balances": self.token_amounts,
             "user0_after": self.token_amounts[0],
         })

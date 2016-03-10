@@ -15,7 +15,7 @@ import random
 from utils import (
     constrained_sum_sample_pos, rm_file, determine_binary, ts_now,
     seconds_in_future, create_votes_array, arr_str, eval_test, write_js,
-    count_token_votes, create_genesis
+    count_token_votes, create_genesis, calculate_reward
 )
 from args import test_args
 
@@ -27,6 +27,7 @@ class TestContext():
         self.dao_addr = None  # check to determine if DAO is deployed
         self.offer_addr = None  # check to determine if offer is deployed
         self.token_amounts = None  # check to determine if funding happened
+        self.prop_id = None  # check to if we have ran proposal scenario
         self.tests_dir = os.path.dirname(os.path.realpath(__file__))
         self.save_file = os.path.join(self.tests_dir, "data", "saved")
         self.templates_dir = os.path.join(self.tests_dir, 'templates')
@@ -40,6 +41,7 @@ class TestContext():
             'deploy': self.run_test_deploy,
             'fund': self.run_test_fund,
             'proposal': self.run_test_proposal,
+            'rewards': self.run_test_rewards,
         }
 
         # keep this at end since any data loaded should override constructor
@@ -65,6 +67,10 @@ class TestContext():
         # creating genesis block with a generous allocation for all accounts
         create_genesis(self.accounts)
         print("Done!")
+
+    def next_proposal_id(self):
+        self.prop_id += 1
+        return self.prop_id
 
     def attemptLoad(self):
         """
@@ -336,6 +342,45 @@ class TestContext():
             "onetime_costs": self.args.offer_onetime_costs,
             "deposit_returned": True,
             "offer_promise_valid": True
+        })
+        self.prop_id = 1
+
+    def create_rewards_js(self, debating_period):
+        print("Creating 'rewards.js'...")
+        with open(
+                os.path.join(self.templates_dir, 'rewards.template.js'),
+                'r'
+        ) as f:
+            data = f.read()
+        tmpl = Template(data)
+        s = tmpl.substitute(
+            dao_abi=self.dao_abi,
+            dao_address=self.dao_addr,
+            total_rewards=self.args.total_rewards,
+            proposal_deposit=self.args.proposal_deposit,
+            transaction_bytecode='0x0',  # fallback function
+            debating_period=debating_period,
+            prop_id=self.next_proposal_id()
+        )
+        write_js('rewards.js', s, len(self.accounts))
+
+    def run_test_rewards(self):
+        if not self.prop_id:
+            # run the proposal scenario first
+            self.run_test_proposal()
+
+        debate_secs = 15
+        self.create_rewards_js(debate_secs)
+        print(
+            "Notice: Debate period is {} seconds so the test will wait "
+            "as much".format(debate_secs)
+        )
+        output = self.run_script('rewards.js')
+        eval_test('rewards.js', output, {
+            "provider_reward_portion": calculate_reward(
+                self.token_amounts[0],
+                self.total_supply,
+                self.args.total_rewards)
         })
 
     def run_test_none(self):

@@ -78,8 +78,15 @@ def test_args():
         default=5
     )
     p.add_argument(
+        '--total-rewards',
+        type=int,
+        help='Amount of ether a kind soul will donate to the DAO'
+        ' for the rewards scenario.',
+        default=78
+    )
+    p.add_argument(
         '--scenario',
-        choices=['none', 'deploy', 'fund', 'proposal'],
+        choices=['none', 'deploy', 'fund', 'proposal', 'rewards'],
         default='none',
         help='Test scenario to play out'
     )

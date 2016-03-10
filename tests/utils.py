@@ -4,6 +4,7 @@ import random
 import os
 import json
 import sys
+import math
 from datetime import datetime
 from jsutils import js_common_intro
 
@@ -156,3 +157,7 @@ def count_token_votes(amounts, votes):
         else:
             nay += amount
     return yay, nay
+
+
+def calculate_reward(tokens, total_tokens, total_rewards):
+    return math.ceil((tokens * total_rewards) / total_tokens)

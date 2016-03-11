@@ -58,7 +58,8 @@ contract DAOInterface {
     // tokens). The address points to the proposal ID.
     mapping (address => uint) public blocked;
 
-    // Deposit in wei the creator added when submitting their proposal
+    // The minimum deposit (in wei) required to submit any proposal that is not
+    // requesting a new service provider (no deposit is required for splits)
     uint public proposalDeposit;
 
     // Contract that is able to create a new DAO (with the same code as 

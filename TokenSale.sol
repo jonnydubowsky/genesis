@@ -54,7 +54,7 @@ contract TokenSaleInterface {
     /// minimum funding goal
     function refund();
 
-    /// @returns the divisor used to calculate the token price during the sale
+    /// @return the divisor used to calculate the token price during the sale
     function divisor() returns (uint divisor);
 
     event FundingToDate(uint value);
@@ -93,9 +93,8 @@ contract TokenSale is TokenSaleInterface, Token {
         if (now > closingTime
             && !isFunded)
         {
-            if (extraBalance.accumulatedInput() != 0
-                && !extraBalance.payOut(address(this), extraBalance.accumulatedInput()))
-                throw;
+            // get extraBalance - will only succeed when called for the first time
+            extraBalance.payOut(address(this), extraBalance.accumulatedInput());
 
             // execute refund
             if (msg.sender.call.value(weiGiven[msg.sender])()) {

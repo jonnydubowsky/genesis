@@ -188,8 +188,8 @@ contract DAOInterface {
         uint _proposalID, 
         address _recipient, 
         uint _amount, 
-        bytes _transactionData,
-        ) 
+        bytes _transactionData
+    ) 
         constant 
         returns (bool _codeChecksOut);
 
@@ -267,7 +267,7 @@ contract DAOInterface {
     function transferFromWithoutReward(
         address _from, 
         address _to, 
-        uint256 _amount,
+        uint256 _amount
     ) 
         returns (bool success);
 
@@ -282,7 +282,7 @@ contract DAOInterface {
         address recipient, 
         uint amount, 
         bool newServiceProvider, 
-        string description,
+        string description
     );
     event Voted(uint indexed proposalID, bool position, address indexed voter);
     event ProposalTallied(uint indexed proposalID, bool result, uint quorum);
@@ -305,7 +305,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         DAO_Creator _daoCreator, 
         uint _minValue, 
         uint _closingTime, 
-        address _privateSale,
+        address _privateSale
     ) 
         TokenSale(_minValue, _closingTime, _privateSale) 
     {
@@ -336,7 +336,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         string _description, 
         bytes _transactionData, 
         uint _debatingPeriod, 
-        bool _newServiceProvider,
+        bool _newServiceProvider
     ) 
         onlyTokenholders 
         returns (uint _proposalID)
@@ -385,7 +385,7 @@ contract DAO is DAOInterface, Token, TokenSale {
             _recipient, 
             _amount, 
             _newServiceProvider, 
-            _description,
+            _description
         );
     }
 
@@ -612,7 +612,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     function transferFromWithoutReward(
         address _from, 
         address _to, 
-        uint256 _value,
+        uint256 _value
     ) 
         returns (bool success) 
     {
@@ -716,7 +716,7 @@ contract DAO_Creator {
     function createDAO(
         address _defaultServiceProvider, 
         uint _minValue, 
-        uint _closingTime,
+        uint _closingTime
     ) 
         returns (DAO _newDAO) 
     {
@@ -725,7 +725,7 @@ contract DAO_Creator {
             DAO_Creator(this), 
             _minValue, 
             _closingTime, 
-            msg.sender,
+            msg.sender
         );
     }
 }

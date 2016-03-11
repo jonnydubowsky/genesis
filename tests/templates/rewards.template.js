@@ -57,16 +57,16 @@ setTimeout(function() {
     // now execute the proposal
     dao.executeProposal.sendTransaction(prop_id, '$transaction_bytecode', {from:serviceProvider, gas:1000000});
     checkWork();
-    addToTest('provider_balance_before_claim', web3.fromWei(eth.getBalance(serviceProvider)));
+    addToTest('provider_balance_before_claim', eth.getBalance(serviceProvider));
     console.log("Claiming the reward...");
     dao.getMyReward.sendTransaction({from: serviceProvider, gas: 1000000});
     checkWork();
-    addToTest('provider_balance_after_claim', web3.fromWei(eth.getBalance(serviceProvider)));
+    addToTest('provider_balance_after_claim', eth.getBalance(serviceProvider));
     addToTest(
         'provider_reward_portion',
-        bigDiff(
+        parseFloat(web3.fromWei(bigDiff(
             testMap['provider_balance_after_claim'], testMap['provider_balance_before_claim']
-        )
+        )))
     );
     testResults();
 }, $debating_period * 1000);

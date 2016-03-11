@@ -34,7 +34,7 @@ checkWork();
 addToTest('creator_balance_after_proposal', web3.fromWei(eth.getBalance(proposalCreator)));
 addToTest(
     'calculated_deposit',
-    bigDiff(testMap['creator_balance_before'], testMap['creator_balance_after_proposal'])
+    bigDiffRound(testMap['creator_balance_before'], testMap['creator_balance_after_proposal'])
 );
 addToTest('dao_proposals_number', dao.numberOfProposals());
 
@@ -72,7 +72,7 @@ setTimeout(function() {
 
     addToTest(
         'onetime_costs',
-        bigDiff(testMap['provider_balance_after'], testMap['provider_balance_before'])
+        bigDiffRound(testMap['provider_balance_after'], testMap['provider_balance_before'])
     );
     addToTest(
         'deposit_returned',

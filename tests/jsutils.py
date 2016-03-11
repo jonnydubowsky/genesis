@@ -20,7 +20,11 @@ function checkWork() {
 }
 
 function bigDiff(astr, bstr) {
-    return Math.round((new BigNumber(astr)).minus(new BigNumber(bstr)));
+    return new BigNumber(astr).minus(new BigNumber(bstr));
+}
+
+function bigDiffRound(astr, bstr) {
+    return Math.round(bigDiff(astr, bstr));
 }
 
 function addToTest(name, value) {

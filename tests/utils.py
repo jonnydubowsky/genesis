@@ -113,6 +113,16 @@ def extract_test_dict(name, output):
     return result
 
 
+def compare_values(a, b):
+    if isinstance(a, float) ^ isinstance(b, float):
+        print("ERROR: float compared with non-float")
+        return False
+    if isinstance(a, float):
+        return abs(a - b) <= 0.01
+    else:
+        return a == b
+
+
 def eval_test(name, output, expected_dict):
     tests_fail = False
     results = extract_test_dict(name, output)
@@ -122,7 +132,7 @@ def eval_test(name, output, expected_dict):
             tests_fail = True
             print("ERROR: Did not find '{}' in the test results".format(k))
             continue
-        if results[k] != v:
+        if not compare_values(results[k], v):
             tests_fail = True
             print("ERROR: Expected {} for '{}' but got {}".format(
                 v, k, results[k]
@@ -172,7 +182,8 @@ def count_token_votes(amounts, votes):
 
 
 def calculate_reward(tokens, total_tokens, total_rewards):
-    return math.ceil((tokens * total_rewards) / total_tokens)
+    result = (tokens * float(total_rewards)) / float(total_tokens)
+    return result
 
 
 def calculate_closing_time(obj, script_name, substitutions):

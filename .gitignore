@@ -15,6 +15,7 @@ tests/deploy.js
 tests/fund.js
 tests/proposal.js
 tests/accounts.js
+tests/rewards.js
 
 # python metadata in tests
 tests/*.pyc

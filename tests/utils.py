@@ -4,6 +4,7 @@ import random
 import os
 import json
 import sys
+import math
 from datetime import datetime
 from jsutils import js_common_intro
 
@@ -93,8 +94,7 @@ def arr_str(arr):
     return '[ ' + ', '.join([str(x).lower() for x in arr]) + ' ]'
 
 
-def eval_test(name, output, expected_dict):
-    tests_fail = False
+def extract_test_dict(name, output):
     split = output.split('Test Results: ', 1)
     if len(split) != 2:
         print("ERROR: Could not parse '{}' output properly.\n"
@@ -102,14 +102,37 @@ def eval_test(name, output, expected_dict):
                   name, output
               ))
         sys.exit(1)
-    results = json.loads(split[1])
+    try:
+        result = json.loads(split[1])
+    except:
+        print("ERROR: Could not parse '{}' output properly.\n"
+              "Output was:\n{}".format(
+                  name, output
+              ))
+        sys.exit(1)
+    return result
+
+
+def compare_values(a, b):
+    if isinstance(a, float) ^ isinstance(b, float):
+        print("ERROR: float compared with non-float")
+        return False
+    if isinstance(a, float):
+        return abs(a - b) <= 0.01
+    else:
+        return a == b
+
+
+def eval_test(name, output, expected_dict):
+    tests_fail = False
+    results = extract_test_dict(name, output)
 
     for k, v in expected_dict.iteritems():
         if k not in results:
             tests_fail = True
             print("ERROR: Did not find '{}' in the test results".format(k))
             continue
-        if results[k] != v:
+        if not compare_values(results[k], v):
             tests_fail = True
             print("ERROR: Expected {} for '{}' but got {}".format(
                 v, k, results[k]
@@ -156,3 +179,14 @@ def count_token_votes(amounts, votes):
         else:
             nay += amount
     return yay, nay
+
+
+def calculate_reward(tokens, total_tokens, total_rewards):
+    result = (tokens * float(total_rewards)) / float(total_tokens)
+    return result
+
+
+def calculate_closing_time(obj, script_name, substitutions):
+    obj.closing_time = seconds_in_future(obj.args.closing_time)
+    substitutions['closing_time'] = obj.closing_time
+    return substitutions

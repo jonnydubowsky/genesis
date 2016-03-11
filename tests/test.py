@@ -15,7 +15,8 @@ import random
 from utils import (
     constrained_sum_sample_pos, rm_file, determine_binary, ts_now,
     seconds_in_future, create_votes_array, arr_str, eval_test, write_js,
-    count_token_votes, create_genesis, calculate_reward
+    count_token_votes, create_genesis, calculate_reward,
+    calculate_closing_time, extract_test_dict
 )
 from args import test_args
 
@@ -182,55 +183,60 @@ class TestContext():
             # also delete the temporary created file
             rm_file(new_path)
 
-    def create_deploy_js(self):
-        print("Creating 'deploy.js'...")
-        # Populate the closing time at deploy.js creation. If done earlier
-        # a lot of time may have passed since start of the script and timing
-        # may be way off (if too many accounts are being created)
-        self.closing_time = seconds_in_future(self.args.closing_time)
+    def create_js_file(self, name, substitutions, cb_before_creation=None):
+        """
+        Creates a js file from a template
+
+        Parameters
+        ----------
+        nam : string
+        The name of the javascript file without the '.js' extension
+
+        substitutions : dict
+        A dict of the substitutions to make in the template
+        file in order to produce the final js
+
+        cb_before_creation : function
+        (Optional) A callback function to be called right before substitution.
+        It should accept the following arguments:
+        (test_framework_object, name_of_js_file, substitutions_dict)
+        and it returns the edited substitutions map
+        """
+        print("Creating {}.js".format(name))
         with open(
-                os.path.join(self.templates_dir, 'deploy.template.js'),
+                os.path.join(self.templates_dir, '{}.template.js'.format(name)),
                 'r'
         ) as f:
             data = f.read()
         tmpl = Template(data)
-        s = tmpl.substitute(
-            dao_abi=self.dao_abi,
-            dao_bin=self.dao_bin,
-            creator_abi=self.creator_abi,
-            creator_bin=self.creator_bin,
-            offer_abi=self.offer_abi,
-            offer_bin=self.offer_bin,
-            offer_onetime=self.args.offer_onetime_costs,
-            offer_total=self.args.offer_total_costs,
-            min_value=self.min_value,
-            closing_time=self.closing_time
-        )
-        with open("deploy.js", "w") as f:
-            f.write(s)
+        if cb_before_creation:
+            substitutions = cb_before_creation(self, name, substitutions)
+        s = tmpl.substitute(substitutions)
+        write_js("{}.js".format(name), s, len(self.accounts))
 
     def run_test_deploy(self):
         print("Running the Deploy Test Scenario")
-        self.create_deploy_js()
-        output = self.run_script('deploy.js')
-
-        r = re.compile(
-            'dao_creator_address: (?P<dao_creator_address>.*?)\n.*'
-            'offer_address: (?P<offer_address>.*?)\n.*'
-            'dao_address: (?P<dao_address>.*?)\n',
-            flags=re.MULTILINE | re.DOTALL
+        self.create_js_file(
+            'deploy',
+            {
+                "dao_abi": self.dao_abi,
+                "dao_bin": self.dao_bin,
+                "creator_abi": self.creator_abi,
+                "creator_bin": self.creator_bin,
+                "offer_abi": self.offer_abi,
+                "offer_bin": self.offer_bin,
+                "offer_onetime": self.args.offer_onetime_costs,
+                "offer_total": self.args.offer_total_costs,
+                "min_value": self.min_value,
+            },
+            calculate_closing_time
         )
-        m = r.search(output)
-        if not m:
-            print(
-                "ERROR: Could not find addresses in the deploy output."
-                "    Output was:\n{}".format(output.replace('\n', '\n    '))
-            )
-            sys.exit(1)
+        output = self.run_script('deploy.js')
+        results = extract_test_dict('deploy', output)
 
-        self.dao_creator_addr = m.group('dao_creator_address')
-        self.dao_addr = m.group('dao_address')
-        self.offer_addr = m.group('offer_address')
+        self.dao_creator_addr = results['dao_creator_address']
+        self.dao_addr = results['dao_address']
+        self.offer_addr = results['offer_address']
         print("DAO Creator address is: {}".format(self.dao_creator_addr))
         print("DAO address is: {}".format(self.dao_addr))
         print("SampleOffer address is: {}".format(self.offer_addr))
@@ -241,22 +247,6 @@ class TestContext():
                 "offer_addr": self.offer_addr,
                 "closing_time": self.closing_time
             }))
-
-    def create_fund_js(self, waitsecs, amounts):
-        print("Creating 'fund.js'...")
-        with open(
-                os.path.join(self.templates_dir, 'fund.template.js'),
-                'r'
-        ) as f:
-            data = f.read()
-        tmpl = Template(data)
-        s = tmpl.substitute(
-            dao_abi=self.dao_abi,
-            dao_address=self.dao_addr,
-            wait_ms=(waitsecs-3)*1000,  # wait a little bit less, since a lot of time passed since creation
-            amounts=arr_str(amounts)
-        )
-        write_js('fund.js', s, len(self.accounts))
 
     def run_test_fund(self):
         # if deployment did not already happen do it now
@@ -279,7 +269,15 @@ class TestContext():
         self.token_amounts = constrained_sum_sample_pos(
             len(self.accounts), self.total_supply
         )
-        self.create_fund_js(sale_secs, self.token_amounts)
+        self.create_js_file(
+            'fund',
+            {
+                "dao_abi": self.dao_abi,
+                "dao_address": self.dao_addr,
+                "wait_ms": (sale_secs-3)*1000,
+                "amounts": arr_str(self.token_amounts)
+            }
+        )
         print(
             "Notice: Funding period is {} seconds so the test will wait "
             "as much".format(sale_secs)
@@ -291,28 +289,6 @@ class TestContext():
             "balances": self.token_amounts,
             "user0_after": self.token_amounts[0],
         })
-
-    def create_proposal_js(self, offer_amount, debating_period, votes):
-        print("Creating 'proposal.js'...")
-        with open(
-                os.path.join(self.templates_dir, 'proposal.template.js'),
-                'r'
-        ) as f:
-            data = f.read()
-        tmpl = Template(data)
-        s = tmpl.substitute(
-            dao_abi=self.dao_abi,
-            dao_address=self.dao_addr,
-            offer_abi=self.offer_abi,
-            offer_address=self.offer_addr,
-            offer_amount=offer_amount,
-            offer_desc='Test Proposal',
-            proposal_deposit=self.args.proposal_deposit,
-            transaction_bytecode='0x2ca15122',  # solc --hashes SampleOffer.sol
-            debating_period=debating_period,
-            votes=arr_str(votes)
-        )
-        write_js('proposal.js', s, len(self.accounts))
 
     def run_test_proposal(self):
         if not self.token_amounts:
@@ -327,7 +303,22 @@ class TestContext():
             not self.args.proposal_fail
         )
         yay, nay = count_token_votes(self.token_amounts, votes)
-        self.create_proposal_js(amount, debate_secs, votes)
+        # self.create_proposal_js(amount, debate_secs, votes)
+        self.create_js_file(
+            'proposal',
+            {
+                "dao_abi": self.dao_abi,
+                "dao_address": self.dao_addr,
+                "offer_abi": self.offer_abi,
+                "offer_address": self.offer_addr,
+                "offer_amount": amount,
+                "offer_desc": 'Test Proposal',
+                "proposal_deposit": self.args.proposal_deposit,
+                "transaction_bytecode": '0x2ca15122',  # solc --hashes SampleOffer.sol
+                "debating_period": debate_secs,
+                "votes": arr_str(votes)
+            }
+        )
         print(
             "Notice: Debate period is {} seconds so the test will wait "
             "as much".format(debate_secs)
@@ -345,32 +336,25 @@ class TestContext():
         })
         self.prop_id = 1
 
-    def create_rewards_js(self, debating_period):
-        print("Creating 'rewards.js'...")
-        with open(
-                os.path.join(self.templates_dir, 'rewards.template.js'),
-                'r'
-        ) as f:
-            data = f.read()
-        tmpl = Template(data)
-        s = tmpl.substitute(
-            dao_abi=self.dao_abi,
-            dao_address=self.dao_addr,
-            total_rewards=self.args.total_rewards,
-            proposal_deposit=self.args.proposal_deposit,
-            transaction_bytecode='0x0',  # fallback function
-            debating_period=debating_period,
-            prop_id=self.next_proposal_id()
-        )
-        write_js('rewards.js', s, len(self.accounts))
-
     def run_test_rewards(self):
         if not self.prop_id:
             # run the proposal scenario first
             self.run_test_proposal()
 
         debate_secs = 15
-        self.create_rewards_js(debate_secs)
+        # self.create_rewards_js(debate_secs)
+        self.create_js_file(
+            'rewards',
+            {
+                "dao_abi": self.dao_abi,
+                "dao_address": self.dao_addr,
+                "total_rewards": self.args.total_rewards,
+                "proposal_deposit": self.args.proposal_deposit,
+                "transaction_bytecode": '0x0',  # fallback function
+                "debating_period": debate_secs,
+                "prop_id": self.next_proposal_id()
+            }
+        )
         print(
             "Notice: Debate period is {} seconds so the test will wait "
             "as much".format(debate_secs)

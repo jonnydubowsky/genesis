@@ -94,8 +94,7 @@ def arr_str(arr):
     return '[ ' + ', '.join([str(x).lower() for x in arr]) + ' ]'
 
 
-def eval_test(name, output, expected_dict):
-    tests_fail = False
+def extract_test_dict(name, output):
     split = output.split('Test Results: ', 1)
     if len(split) != 2:
         print("ERROR: Could not parse '{}' output properly.\n"
@@ -103,7 +102,20 @@ def eval_test(name, output, expected_dict):
                   name, output
               ))
         sys.exit(1)
-    results = json.loads(split[1])
+    try:
+        result = json.loads(split[1])
+    except:
+        print("ERROR: Could not parse '{}' output properly.\n"
+              "Output was:\n{}".format(
+                  name, output
+              ))
+        sys.exit(1)
+    return result
+
+
+def eval_test(name, output, expected_dict):
+    tests_fail = False
+    results = extract_test_dict(name, output)
 
     for k, v in expected_dict.iteritems():
         if k not in results:
@@ -161,3 +173,9 @@ def count_token_votes(amounts, votes):
 
 def calculate_reward(tokens, total_tokens, total_rewards):
     return math.ceil((tokens * total_rewards) / total_tokens)
+
+
+def calculate_closing_time(obj, script_name, substitutions):
+    obj.closing_time = seconds_in_future(obj.args.closing_time)
+    substitutions['closing_time'] = obj.closing_time
+    return substitutions

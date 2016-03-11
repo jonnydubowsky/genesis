@@ -1,17 +1,3 @@
-console.log("unlocking account");
-personal.unlockAccount(web3.eth.accounts[0], "123");
-
-function checkWork() {
-    if (eth.getBlock("pending").transactions.length > 0) {
-        if (eth.mining) return;
-        console.log("== Pending transactions! Mining...");
-        miner.start(1);
-    } else {
-        miner.stop(0);  // This param means nothing
-        console.log("== No transactions! Mining stopped.");
-    }
-}
-
 var _defaultServiceProvider = web3.eth.accounts[0];
 var daoContract = web3.eth.contract($dao_abi);
 console.log("Creating DAOCreator Contract");
@@ -25,7 +11,7 @@ var _daoCreatorContract = creatorContract.new(
 	if (e) {
             console.log(e+" at DAOCreator creation!");
 	} else if (typeof contract.address != 'undefined') {
-	    console.log('dao_creator_address: ' + contract.address);
+        addToTest('dao_creator_address', contract.address);
         checkWork();
         var dao = daoContract.new(
 		    _defaultServiceProvider,
@@ -42,7 +28,7 @@ var _daoCreatorContract = creatorContract.new(
 		        // funny thing, without this geth hangs
 		        console.log("At DAO creation callback");
 		        if (typeof contract.address != 'undefined') {
-			        console.log('dao_address: ' + contract.address);
+                    addToTest('dao_address', contract.address);
 		        }
 		    });
         checkWork();
@@ -66,10 +52,16 @@ var offer = offerContract.new(
 	    if (e) {
             console.log(e + " at Offer Contract creation!");
 	    } else if (typeof contract.address != 'undefined') {
-                console.log('offer_address: ' + contract.address);
+            addToTest('offer_address', contract.address);
         }
     }
 );
 checkWork();
 console.log("mining contract, please wait");
+miner.start(1);
+setTimeout(function() {
+    miner.stop(0);
+    testResults();
+}, 3000);
+
 

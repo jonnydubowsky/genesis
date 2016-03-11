@@ -39,7 +39,7 @@ def test_args():
         '--closing-time',
         type=int,
         help='Number of seconds from now when the newly created DAO sale ends',
-        default=25
+        default=35
     )
     p.add_argument(
         '--min-value',

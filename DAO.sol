@@ -173,8 +173,8 @@ contract DAOInterface {
         uint _debatingPeriod, 
         bool _newServiceProvider
     ) 
-    onlyTokenholders 
-    returns (uint _proposalID);
+        onlyTokenholders 
+        returns (uint _proposalID);
 
     /// @notice Check that the proposal with the ID `_proposalID` matches the 
     /// transaction which sends `_amount` with data `_transactionData` 
@@ -224,7 +224,7 @@ contract DAOInterface {
     function splitDAO(
         uint _proposalID, 
         address _newServiceProvider
-        ) 
+    ) 
         returns (bool _success);
 
     /// @notice Add a new possible recipient `_recipient` to the whitelist so 
@@ -296,9 +296,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     // Modifier that allows only shareholders to vote and create new proposals
     modifier onlyTokenholders {
         if (balanceOf(msg.sender) == 0) throw;
-            _
     }
-
 
     function DAO(
         address _defaultServiceProvider, 

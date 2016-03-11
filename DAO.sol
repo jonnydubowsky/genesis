@@ -296,6 +296,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     // Modifier that allows only shareholders to vote and create new proposals
     modifier onlyTokenholders {
         if (balanceOf(msg.sender) == 0) throw;
+            _    
     }
 
     function DAO(

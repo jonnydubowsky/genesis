@@ -665,7 +665,7 @@ contract DAO is DAOInterface, Token, TokenSale {
             || _recipient == address(rewardAccount) 
             || _recipient == address(this)
             || (_recipient == address(extraBalance)
-                // only allowed when at least the amount hold in the
+                // only allowed when at least the amount held in the
                 // extraBalance account has been spent from the DAO
                 && totalRewardToken > extraBalance.accumulatedInput())
         )

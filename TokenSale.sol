@@ -90,8 +90,7 @@ contract TokenSale is TokenSaleInterface, Token {
     }
 
     function refund() noEther {
-        if (now > closingTime && !isFunded)
-        {
+        if (now > closingTime && !isFunded) {
             // get extraBalance - will only succeed when called for the first time
             extraBalance.payOut(address(this), extraBalance.accumulatedInput());
 

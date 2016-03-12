@@ -318,6 +318,13 @@ contract DAO is DAOInterface, Token, TokenSale {
         if (address(rewardAccount) == 0) throw;
     }
 
+    function () returns (bool success) {
+        if (now < closingTime + 40 days)
+            return buyTokenProxy(msg.sender);
+        else
+            return receiveEther();
+    }
+
 
     function payDAO() returns (bool) {
         rewards += msg.value;
@@ -657,6 +664,10 @@ contract DAO is DAOInterface, Token, TokenSale {
         if (_recipient == serviceProvider 
             || _recipient == address(rewardAccount) 
             || _recipient == address(this)
+            || (_recipient == address(extraBalance)
+                // only allowed when at least the amount held in the
+                // extraBalance account has been spent from the DAO
+                && totalRewardToken > extraBalance.accumulatedInput())
         )
             return true;
         for (uint i = 0; i < allowedRecipients.length; ++i) {

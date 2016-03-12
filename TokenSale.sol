@@ -34,7 +34,7 @@ contract TokenSaleInterface {
     // For DAO splits - if privateSale is 0, then it is a public sale, otherwise
     // only the address stored in privateSale is allowed to purchase tokens
     address public privateSale;
-    // used to store extra ether which has been paid after the price has increased
+    // hold extra ether which has been paid after the DAO token price has increased
     ManagedAccount extraBalance;
     // tracks the amount of wei given from each contributor (used for refund)
     mapping (address => uint256) weiGiven;
@@ -90,8 +90,7 @@ contract TokenSale is TokenSaleInterface, Token {
     }
 
     function refund() noEther {
-        if (now > closingTime
-            && !isFunded)
+        if (now > closingTime && !isFunded)
         {
             // get extraBalance - will only succeed when called for the first time
             extraBalance.payOut(address(this), extraBalance.accumulatedInput());
@@ -106,9 +105,14 @@ contract TokenSale is TokenSaleInterface, Token {
     }
 
     function divisor() returns (uint divisor){
+        // the number of (base unit) tokens per wei is calculated
+        // as `msg.value` * 20 / `divisor`
+        // the funding period starts with a 1:1 ratio
         if (closingTime - 2 weeks > now) return 20;
+        // followed by 10 days with a daily price increase of 5%
         else if (closingTime - 4 days > now)
             return (20 + (now - (closingTime - 2 weeks)) / (1 days));
+        // the last 4 days there is a constant price ratio of 1:1,5
         else return 30;
     }
 }

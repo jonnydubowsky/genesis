@@ -301,8 +301,8 @@ def tokens_after_split(votes, original_balance, dao_balance, reward_tokens):
             new_dao_balance.append(orig * dao_balance / totalSupply)
             old_dao_balance.append(0)
             rewardToMove = float(orig) * reward_tokens / float(totalSupply)
-            old_reward_tokens -= rewardToMove
-            new_reward_tokens += rewardToMove
+            old_reward_tokens -= float(rewardToMove)
+            new_reward_tokens += float(rewardToMove)
         else:
             old_dao_balance.append(orig)
             new_dao_balance.append(0)

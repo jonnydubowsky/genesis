@@ -590,7 +590,6 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-    {
         if (isFunded
             && now > closingTime
             && !isBlocked(_from)

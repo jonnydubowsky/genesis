@@ -30,21 +30,22 @@ contract ManagedAccountInterface {
 
 
 contract ManagedAccount is ManagedAccountInterface{
-    function ManagedAccount(address _owner){
+    function ManagedAccount(address _owner) {
         owner = _owner;
     }
 
-    function(){
+    function() {
         accumulatedInput += msg.value;
     }
 
-    function payOut(address _recipient, uint _amount) returns (bool){
-        if (msg.sender != owner || msg.value > 0) throw;
-        if (_recipient.call.value(_amount)()){
+    function payOut(address _recipient, uint _amount) returns (bool) {
+        if (msg.sender != owner || msg.value > 0)
+            throw;
+        if (_recipient.call.value(_amount)()) {
             PayOut(_recipient, _amount);
             return true;
-        }
-        else
+        } else {
             return false;
+        }
     }
 }

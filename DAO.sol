@@ -344,14 +344,14 @@ contract DAO is DAOInterface, Token, TokenSale {
             || _transactionData.length != 0 
             || _recipient == serviceProvider 
             || msg.value > 0 
-            || _debatingPeriod < 1 weeks)) 
-        {
+            || _debatingPeriod < 1 weeks)) {
+            throw;
+        } else if(
+            !_newServiceProvider 
+            && (!isRecipientAllowed(_recipient) || (_debatingPeriod < 2 weeks))
+        ) {
             throw;
         }
-        else if (!_newServiceProvider 
-            && (!isRecipientAllowed(_recipient) || (_debatingPeriod < 2 weeks))
-        ) 
-            throw;
 
         if (!isFunded 
             || now < closingTime 
@@ -359,9 +359,11 @@ contract DAO is DAOInterface, Token, TokenSale {
         ) 
             throw;
 
-        if (_recipient == address(rewardAccount) && _amount > rewards) throw;
+        if (_recipient == address(rewardAccount) && _amount > rewards)
+            throw;
 
-        if (now + _debatingPeriod < now) throw; // preventing overflow
+        if (now + _debatingPeriod < now) // prevents overflow
+            throw;
 
         _proposalID = proposals.length++;
         Proposal p = proposals[_proposalID];
@@ -406,27 +408,24 @@ contract DAO is DAOInterface, Token, TokenSale {
         Proposal p = proposals[_proposalID];
         if (p.votedYes[msg.sender] 
             || p.votedNo[msg.sender] 
-            || now >= p.votingDeadline
-        ) 
+            || now >= p.votingDeadline)
             throw;
 
         if (_supportsProposal){
             p.yea += balances[msg.sender];
             p.votedYes[msg.sender] = true;
-        }
-        else{
+        } else {
             p.nay += balances[msg.sender];
             p.votedNo[msg.sender] = true;
         }
 
-        if (blocked[msg.sender] == 0)
+        if (blocked[msg.sender] == 0) {
             blocked[msg.sender] = _proposalID;
-        // Check whether this proposal has a longer voting time left than  
-        // another existing proposal voted on. (TODO: Make this comment clearer...?)
-        else if (
-            p.votingDeadline > proposals[blocked[msg.sender]].votingDeadline
-        )
+        } else if (p.votingDeadline > proposals[blocked[msg.sender]].votingDeadline) {
+            // this proposal's voting deadline is further into the future than
+            // the proposal that blocks the sender so make it the blocker
             blocked[msg.sender] = _proposalID;
+        }
 
         Voted(_proposalID, _supportsProposal, msg.sender);
     }
@@ -467,13 +466,11 @@ contract DAO is DAOInterface, Token, TokenSale {
                 // both are passed at the same time.
                 if (rewards < p.amount) throw;
                 rewards -= p.amount;
-            }
-            else {
+            } else {
                 rewardToken[address(this)] += p.amount;
                 totalRewardToken += p.amount;
             }
-        }
-        else if (quorum >= minQuorum(p.amount) && p.nay >= p.yea) {
+        } else if (quorum >= minQuorum(p.amount) && p.nay >= p.yea) {
             if (!p.creator.send(p.proposalDeposit)) throw;
             lastTimeMinQuorumMet = now;
         }
@@ -513,9 +510,11 @@ contract DAO is DAOInterface, Token, TokenSale {
         if (address(p.splitData[0].newDAO) == 0) {
             p.splitData[0].newDAO = createNewDAO(_newServiceProvider);
             // Call depth limit reached, etc.
-            if (address(p.splitData[0].newDAO) == 0) throw; 
+            if (address(p.splitData[0].newDAO) == 0)
+                throw; 
             // p.proposalDeposit should be zero here
-            if (this.balance < p.proposalDeposit) throw; 
+            if (this.balance < p.proposalDeposit)
+                throw; 
             p.splitData[0].splitBalance = this.balance - p.proposalDeposit;
             p.splitData[0].rewardToken = rewardToken[address(this)];
             p.splitData[0].totalSupply = totalSupply;
@@ -525,7 +524,7 @@ contract DAO is DAOInterface, Token, TokenSale {
         uint fundsToBeMoved = 
             (balances[msg.sender] * p.splitData[0].splitBalance) /
             p.splitData[0].totalSupply;
-        if (p.splitData[0].newDAO.buyTokenProxy.value(fundsToBeMoved)(msg.sender) == false) //TODO The line is 91 characters
+        if (p.splitData[0].newDAO.buyTokenProxy.value(fundsToBeMoved)(msg.sender) == false)
             throw;
        
        
@@ -534,7 +533,8 @@ contract DAO is DAOInterface, Token, TokenSale {
             (balances[msg.sender] * p.splitData[0].rewardToken) /
             p.splitData[0].totalSupply;
         rewardToken[address(p.splitData[0].newDAO)] += rewardTokenToBeMoved;
-        if (rewardToken[address(this)] < rewardTokenToBeMoved) throw;  
+        if (rewardToken[address(this)] < rewardTokenToBeMoved)
+            throw;  
         rewardToken[address(this)] -= rewardTokenToBeMoved;
 
         // Burn DAO Tokens
@@ -561,7 +561,8 @@ contract DAO is DAOInterface, Token, TokenSale {
         uint reward = 
             (portionOfTheReward * rewardAccount.accumulatedInput()) /
             totalRewardToken - paidOut[_account];
-        if (!rewardAccount.payOut(_account, reward)) throw;
+        if (!rewardAccount.payOut(_account, reward))
+            throw;
         paidOut[_account] += reward;
         return true;
     }
@@ -572,16 +573,18 @@ contract DAO is DAOInterface, Token, TokenSale {
             && now > closingTime 
             && !isBlocked(msg.sender) 
             && transferPaidOut(msg.sender, _to, _value) 
-            && super.transfer(_to, _value)) 
-        {
+            && super.transfer(_to, _value)) {
+
             return true;
+        } else {
+            throw;
         }
-        else throw;
     }
 
 
     function transferWithoutReward(address _to, uint256 _value) returns (bool success) {
-        if (!getMyReward()) throw;
+        if (!getMyReward())
+            throw;
         return transfer(_to, _value);
     }
 
@@ -592,11 +595,12 @@ contract DAO is DAOInterface, Token, TokenSale {
             && now > closingTime 
             && !isBlocked(_from) 
             && transferPaidOut(_from, _to, _value) 
-            && super.transferFrom(_from, _to, _value)) 
-        {
+            && super.transferFrom(_from, _to, _value)) {
+
             return true;
+        } else {
+            throw;
         }
-        else throw;
     }
 
 
@@ -606,7 +610,8 @@ contract DAO is DAOInterface, Token, TokenSale {
         uint256 _value
     ) returns (bool success) {
 
-        if (!withdrawRewardFor(_from)) throw;
+        if (!withdrawRewardFor(_from))
+            throw;
         return transferFrom(_from, _to, _value);
     }
 
@@ -618,7 +623,8 @@ contract DAO is DAOInterface, Token, TokenSale {
     ) internal returns (bool success) {
 
         uint transferPaidOut = paidOut[_from] * _value / balanceOf(_from);
-        if (transferPaidOut > paidOut[_from]) throw;
+        if (transferPaidOut > paidOut[_from])
+            throw;
         paidOut[_from] -= transferPaidOut;
         paidOut[_to] += transferPaidOut;
         return true;
@@ -633,7 +639,8 @@ contract DAO is DAOInterface, Token, TokenSale {
 
 
     function addAllowedAddress(address _recipient) noEther external returns (bool _success) {
-        if (msg.sender != serviceProvider) throw;
+        if (msg.sender != serviceProvider)
+            throw;
         allowedRecipients.push(_recipient);
         return true;
     }
@@ -646,9 +653,9 @@ contract DAO is DAOInterface, Token, TokenSale {
             || (_recipient == address(extraBalance)
                 // only allowed when at least the amount held in the
                 // extraBalance account has been spent from the DAO
-                && totalRewardToken > extraBalance.accumulatedInput())
-        )
+                && totalRewardToken > extraBalance.accumulatedInput()))
             return true;
+
         for (uint i = 0; i < allowedRecipients.length; ++i) {
             if (_recipient == allowedRecipients[i])
                 return true;
@@ -668,9 +675,9 @@ contract DAO is DAOInterface, Token, TokenSale {
             lastTimeMinQuorumMet = now;
             minQuorumDivisor *= 2;
             return true;
-        }
-        else
+        } else {
             return false;
+        }
     }
 
 
@@ -689,12 +696,12 @@ contract DAO is DAOInterface, Token, TokenSale {
     function isBlocked(address _account) returns (bool){
         if (blocked[_account] == 0) return false;
         Proposal p = proposals[blocked[_account]];
-        if (!p.open){
+        if (!p.open) {
             blocked[_account] = 0;
             return false;
-        }
-        else
+        } else {
             return true;
+        }
     }
 }
 

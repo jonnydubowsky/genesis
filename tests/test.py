@@ -156,7 +156,6 @@ class TestContext():
             print("DAO contract not found at {}".format(dao_contract))
             sys.exit(1)
         dao_contract = edit_dao_source(
-            dao_contract,
             self.contracts_dir,
             keep_limits
         )
@@ -174,9 +173,9 @@ class TestContext():
         self.offer_abi = res["contracts"]["SampleOffer"]["abi"]
         self.offer_bin = res["contracts"]["SampleOffer"]["bin"]
 
-        if not keep_limits:
-            # also delete the temporary created file
-            rm_file(dao_contract)
+        # also delete the temporary created files
+        rm_file(os.path.join(self.contracts_dir, "DAOcopy.sol"))
+        rm_file(os.path.join(self.contracts_dir, "TokenSaleCopy.sol"))
 
     def create_js_file(self, name, substitutions, cb_before_creation=None):
         """
@@ -229,9 +228,16 @@ class TestContext():
         output = self.run_script('deploy.js')
         results = extract_test_dict('deploy', output)
 
-        self.dao_creator_addr = results['dao_creator_address']
-        self.dao_addr = results['dao_address']
-        self.offer_addr = results['offer_address']
+        try:
+            self.dao_creator_addr = results['dao_creator_address']
+            self.dao_addr = results['dao_address']
+            self.offer_addr = results['offer_address']
+        except:
+            print(
+                "ERROR: Could not find expected results in the deploy scenario"
+                ". The output was:\n{}".format(output)
+            )
+            sys.exit(1)
         print("DAO Creator address is: {}".format(self.dao_creator_addr))
         print("DAO address is: {}".format(self.dao_addr))
         print("SampleOffer address is: {}".format(self.offer_addr))

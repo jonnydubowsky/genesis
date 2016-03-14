@@ -22,8 +22,7 @@ var _daoCreatorContract = creatorContract.new(
 		    {
 		        from: web3.eth.accounts[0],
 		        data: '$dao_bin',
-		        gas: 3000000,
-		        gasPrice: 500000000000
+		        gas: 4000000
 		    }, function (e, contract) {
 		        // funny thing, without this geth hangs
 		        console.log("At DAO creation callback");

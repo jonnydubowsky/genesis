@@ -193,9 +193,8 @@ def calculate_closing_time(obj, script_name, substitutions):
     return substitutions
 
 
-def edit_dao_source(dao_contract, contracts_dir, keep_limits):
-
-    with open(dao_contract, 'r') as f:
+def edit_dao_source(contracts_dir, keep_limits):
+    with open(os.path.join(contracts_dir, 'DAO.sol'), 'r') as f:
         contents = f.read()
 
     # remove all limits that would make testing impossible
@@ -203,6 +202,7 @@ def edit_dao_source(dao_contract, contracts_dir, keep_limits):
         contents = contents.replace(" || _debatingPeriod < 1 weeks", "")
         contents = contents.replace(" || (_debatingPeriod < 2 weeks)", "")
         contents = contents.replace("|| now > p.votingDeadline + 41 days", "")
+        contents = contents.replace("now < closingTime + 40 days", "true")
 
     # add test query functions
     contents = contents.replace(
@@ -238,10 +238,23 @@ def edit_dao_source(dao_contract, contracts_dir, keep_limits):
         }
 """
     )
+    contents = contents.replace(
+        'import "./TokenSale.sol";',
+        'import "./TokenSaleCopy.sol";'
+    )
 
     new_path = os.path.join(contracts_dir, "DAOcopy.sol")
     with open(new_path, "w") as f:
         f.write(contents)
+
+    # now edit TokenSale source
+    with open(os.path.join(contracts_dir, 'TokenSale.sol'), 'r') as f:
+        contents = f.read()
+    if not keep_limits:
+        contents = contents.replace('closingTime - 2 weeks > now', 'true')
+    with open(os.path.join(contracts_dir, 'TokenSaleCopy.sol'), "w") as f:
+        f.write(contents)
+
     return new_path
 
 

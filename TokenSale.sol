@@ -24,13 +24,13 @@ import "./Token.sol";
 import "./ManagedAccount.sol";
 
 contract TokenSaleInterface {
-    
+
     // End of token sale, in Unix time
-    uint public closingTime;   
+    uint public closingTime;
     // Minimum funding goal of the token sale, denominated in tokens
-    uint public minValue;  
+    uint public minValue;
     // True if the DAO reached its minimum funding goal, false otherwise
-    bool public isFunded;   
+    bool public isFunded;
     // For DAO splits - if privateSale is 0, then it is a public sale, otherwise
     // only the address stored in privateSale is allowed to purchase tokens
     address public privateSale;
@@ -38,8 +38,8 @@ contract TokenSaleInterface {
     ManagedAccount extraBalance;
     // tracks the amount of wei given from each contributor (used for refund)
     mapping (address => uint256) weiGiven;
-    
-    /// @dev Constructor setting the minimum funding goal and the 
+
+    /// @dev Constructor setting the minimum funding goal and the
     /// end of the Token Sale
     /// @param _minValue Token Sale minimum funding goal
     /// @param _closingTime Date (in Unix time) of the end of the Token Sale
@@ -47,10 +47,10 @@ contract TokenSaleInterface {
     //  function TokenSale(uint _minValue, uint _closingTime);
 
     /// @notice Buy Token with `_tokenHolder` as the initial owner of the Token
-    /// @param _tokenHolder The address of the Tokens's recipient 
+    /// @param _tokenHolder The address of the Tokens's recipient
     function buyTokenProxy(address _tokenHolder) returns (bool success);
 
-    /// @notice Refund `msg.sender` in the case the Token Sale didn't reach its 
+    /// @notice Refund `msg.sender` in the case the Token Sale didn't reach its
     /// minimum funding goal
     function refund();
 
@@ -72,8 +72,9 @@ contract TokenSale is TokenSaleInterface, Token {
     }
 
     function buyTokenProxy(address _tokenHolder) returns (bool success) {
-        if (now < closingTime && msg.value > 0 
-        && (privateSale == 0 || privateSale == msg.sender)) {
+        if (now < closingTime && msg.value > 0
+            && (privateSale == 0 || privateSale == msg.sender)) {
+
             uint token = (msg.value * 20) / divisor();
             extraBalance.call.value(msg.value - token)();
             balances[_tokenHolder] += token;
@@ -103,15 +104,18 @@ contract TokenSale is TokenSaleInterface, Token {
         }
     }
 
-    function divisor() returns (uint divisor){
+    function divisor() returns (uint divisor) {
         // the number of (base unit) tokens per wei is calculated
         // as `msg.value` * 20 / `divisor`
         // the funding period starts with a 1:1 ratio
-        if (closingTime - 2 weeks > now) return 20;
+        if (closingTime - 2 weeks > now) {
+            return 20;
         // followed by 10 days with a daily price increase of 5%
-        else if (closingTime - 4 days > now)
+        } else if (closingTime - 4 days > now) {
             return (20 + (now - (closingTime - 2 weeks)) / (1 days));
         // the last 4 days there is a constant price ratio of 1:1,5
-        else return 30;
+        } else {
+            return 30;
+        }
     }
 }

@@ -68,6 +68,8 @@ setTimeout(function() {
             testMap['provider_balance_after_claim'], testMap['provider_balance_before_claim']
         )))
     );
+    addToTest('DAO_balance', parseFloat(web3.fromWei(eth.getBalance('$dao_address'))));
+    addToTest('DAO_rewardToken', parseFloat(web3.fromWei(dao.rewardToken('$dao_address'))));
     testResults();
 }, $debating_period * 1000);
 console.log("Wait for end of debating period");

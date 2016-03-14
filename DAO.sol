@@ -308,7 +308,8 @@ contract DAO is DAOInterface, Token, TokenSale {
         lastTimeMinQuorumMet = now;
         minQuorumDivisor = 5; // sets the minimal quorum to 20%
         proposals.length++; // avoids a proposal with ID 0 because it is used
-        if (address(rewardAccount) == 0) throw;
+        if (address(rewardAccount) == 0)
+            throw;
     }
 
     function () returns (bool success) {
@@ -355,9 +356,10 @@ contract DAO is DAOInterface, Token, TokenSale {
 
         if (!isFunded
             || now < closingTime
-            || (msg.value < proposalDeposit && !_newServiceProvider)
-        )
+            || (msg.value < proposalDeposit && !_newServiceProvider)) {
+
             throw;
+        }
 
         if (_recipient == address(rewardAccount) && _amount > rewards)
             throw;
@@ -408,10 +410,12 @@ contract DAO is DAOInterface, Token, TokenSale {
         Proposal p = proposals[_proposalID];
         if (p.votedYes[msg.sender]
             || p.votedNo[msg.sender]
-            || now >= p.votingDeadline)
-            throw;
+            || now >= p.votingDeadline) {
 
-        if (_supportsProposal){
+            throw;
+        }
+
+        if (_supportsProposal) {
             p.yea += balances[msg.sender];
             p.votedYes[msg.sender] = true;
         } else {
@@ -442,8 +446,10 @@ contract DAO is DAOInterface, Token, TokenSale {
             // Have the votes been counted?
             || !p.open
             // Does the transaction code match the proposal?
-            || p.proposalHash != sha3(p.recipient, p.amount, _transactionData))
+            || p.proposalHash != sha3(p.recipient, p.amount, _transactionData)) {
+
             throw;
+        }
 
         if (p.newServiceProvider) {
             p.open = false;
@@ -454,24 +460,28 @@ contract DAO is DAOInterface, Token, TokenSale {
 
         // Execute result
         if (quorum >= minQuorum(p.amount) && p.yea > p.nay) {
-            if (!p.creator.send(p.proposalDeposit)) throw;
+            if (!p.creator.send(p.proposalDeposit))
+                throw;
             // Without this throw, the creator of the proposal can repeat this,
             // and get so much ether
-            if (!p.recipient.call.value(p.amount)(_transactionData)) throw;
+            if (!p.recipient.call.value(p.amount)(_transactionData))
+                throw;
             p.proposalPassed = true;
             _success = true;
             lastTimeMinQuorumMet = now;
             if (p.recipient == address(rewardAccount)) {
                 // This happens when multiple similar proposals are created and
                 // both are passed at the same time.
-                if (rewards < p.amount) throw;
+                if (rewards < p.amount)
+                    throw;
                 rewards -= p.amount;
             } else {
                 rewardToken[address(this)] += p.amount;
                 totalRewardToken += p.amount;
             }
         } else if (quorum >= minQuorum(p.amount) && p.nay >= p.yea) {
-            if (!p.creator.send(p.proposalDeposit)) throw;
+            if (!p.creator.send(p.proposalDeposit))
+                throw;
             lastTimeMinQuorumMet = now;
         }
 
@@ -502,8 +512,10 @@ contract DAO is DAOInterface, Token, TokenSale {
             // Have you voted for this split?
             || !p.votedYes[msg.sender]
             // Did you already vote on another proposal?
-            || blocked[msg.sender] != _proposalID)
+            || blocked[msg.sender] != _proposalID) {
+
             throw;
+        }
 
         // If the new DAO doesn't exist yet, create the new DAO and store the
         // current split data
@@ -669,7 +681,7 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function halveMinQuorum() returns (bool _success){
+    function halveMinQuorum() returns (bool _success) {
         if (lastTimeMinQuorumMet < (now - 52 weeks)) {
             lastTimeMinQuorumMet = now;
             minQuorumDivisor *= 2;
@@ -692,8 +704,9 @@ contract DAO is DAOInterface, Token, TokenSale {
     }
 
 
-    function isBlocked(address _account) returns (bool){
-        if (blocked[_account] == 0) return false;
+    function isBlocked(address _account) returns (bool) {
+        if (blocked[_account] == 0)
+            return false;
         Proposal p = proposals[blocked[_account]];
         if (!p.open) {
             blocked[_account] = 0;

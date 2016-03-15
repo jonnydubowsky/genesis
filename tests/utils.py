@@ -124,6 +124,25 @@ def compare_values(a, b):
 
 
 def eval_test(name, output, expected_dict):
+    """
+    Evaluate output of a scenario and compare with expected results
+        Parameters
+        ----------
+        name : string
+        The name of the scenario to evaluate
+
+        output : string
+        The output of the script that was executed, from which we will
+        extract the results
+
+        expected_dict : dict
+        A dictionary containing all the expected output from the test
+
+        Returns
+        ----------
+        results : dict
+        The dictionary that resulted from the parsing of the test output
+    """
     tests_fail = False
     results = extract_test_dict(name, output)
 
@@ -139,9 +158,11 @@ def eval_test(name, output, expected_dict):
             ))
 
     if not tests_fail:
-        print("Tests for '{}' PASSED!".format(name))
+        print("Tests for scenario '{}' PASSED!".format(name))
     else:
-        print("Tests for '{}' FAILED! Script output was:\n{}".format(name, output))
+        print("Tests for scenario '{}' FAILED! Script output was:\n{}".format(
+            name, output)
+        )
         sys.exit(1)
     return results
 

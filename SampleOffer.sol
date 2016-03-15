@@ -19,8 +19,8 @@ along with the DAO.  If not, see <http://www.gnu.org/licenses/>.
 
 import "./DAO.sol";
 
-contract SampleOffer
-{
+contract SampleOffer {
+
     uint totalCosts;
     uint oneTimeCosts;
     uint dailyCosts;
@@ -40,19 +40,29 @@ contract SampleOffer
 
     modifier callingRestriction {
         if (promiseValid) {
-            if (msg.sender != address(client)) throw;
+            if (msg.sender != address(client))
+                throw;
+        } else if (msg.sender != serviceProvider) {
+                throw;
         }
-        else
-            if (msg.sender != serviceProvider) throw;
         _
     }
 
     modifier onlyClient {
-        if (msg.sender != address(client)) throw;
+        if (msg.sender != address(client))
+            throw;
         _
     }
 
-    function SampleOffer(address _serviceProvider, bytes32 _hashOfTheContract, uint _totalCosts, uint _oneTimeCosts, uint _minDailyCosts, uint _rewardDivisor, uint _deploymentReward) {
+    function SampleOffer(
+        address _serviceProvider,
+        bytes32 _hashOfTheContract,
+        uint _totalCosts,
+        uint _oneTimeCosts,
+        uint _minDailyCosts,
+        uint _rewardDivisor,
+        uint _deploymentReward
+    ) {
         serviceProvider = _serviceProvider;
         hashOfTheContract = _hashOfTheContract;
         totalCosts = _totalCosts;
@@ -64,8 +74,10 @@ contract SampleOffer
     }
 
     function sign() {
-        if (msg.value < totalCosts && dateOfSignature != 0) throw;
-        if (!serviceProvider.send(oneTimeCosts)) throw;
+        if (msg.value < totalCosts && dateOfSignature != 0)
+            throw;
+        if (!serviceProvider.send(oneTimeCosts))
+            throw;
         client = DAO(msg.sender);
         dateOfSignature = now;
         promiseValid = true;
@@ -76,25 +88,29 @@ contract SampleOffer
         if (dailyCosts < minDailyCosts)
             promiseValid = false;
     }
+
     function returnRemainingMoney() onlyClient {
         if (client.receiveEther.value(this.balance)())
-            promiseValid = false;        
+            promiseValid = false;
     }
 
     function getDailyPayment() {
-        if (msg.sender != serviceProvider) throw;
+        if (msg.sender != serviceProvider)
+            throw;
         uint amount = (now - dateOfSignature) / (1 days) * dailyCosts - paidOut;
         if (serviceProvider.send(amount))
             paidOut += amount;
     }
 
     function setRewardDivisor(uint _rewardDivisor) callingRestriction {
-        if (_rewardDivisor < 50 && msg.sender != address(client)) throw; // 2% is the default max reward
+        if (_rewardDivisor < 50 && msg.sender != address(client))
+            throw; // 2% is the default max reward
         rewardDivisor = _rewardDivisor;
     }
 
     function setDeploymentFee(uint _deploymentReward) callingRestriction {
-        if (deploymentReward > 100 ether && msg.sender != address(client)) throw; // TODO, set a max defined by service provider, or ideally oracle (set in euro)
+        if (deploymentReward > 100 ether && msg.sender != address(client))
+            throw; // TODO, set a max defined by service provider, or ideally oracle (set in euro)
         deploymentReward = _deploymentReward;
     }
 
@@ -103,24 +119,34 @@ contract SampleOffer
         if (msg.value < deploymentReward)
             throw;
         if (promiseValid) {
-            if (client.payDAO.value(msg.value)()) return true;
-            else throw;
-        }
-        else {
-            if (serviceProvider.send(msg.value)) return true;
-            else throw;
+            if (client.payDAO.value(msg.value)()) {
+                return true;
+            } else {
+                throw;
+            }
+        } else {
+            if (serviceProvider.send(msg.value)) {
+                return true;
+            } else {
+                throw;
+            }
         }
     }
 
     // pay reward
     function payReward() returns(bool) {
         if (promiseValid) {
-            if (client.payDAO.value(msg.value)()) return true;
-            else throw;
-        }
-        else {
-            if (serviceProvider.send(msg.value)) return true;
-            else throw;
+            if (client.payDAO.value(msg.value)()) {
+                return true;
+            } else {
+                throw;
+            }
+        } else {
+            if (serviceProvider.send(msg.value)) {
+                return true;
+            } else {
+                throw;
+            }
         }
     }
 }

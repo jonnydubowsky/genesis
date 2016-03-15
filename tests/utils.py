@@ -141,8 +141,9 @@ def eval_test(name, output, expected_dict):
     if not tests_fail:
         print("Tests for '{}' PASSED!".format(name))
     else:
-        print("Tests for '{}' FAILED!".format(name))
+        print("Tests for '{}' FAILED! Script output was:\n{}".format(name, output))
         sys.exit(1)
+    return results
 
 
 def write_js(name, contents, accounts_num):
@@ -190,3 +191,124 @@ def calculate_closing_time(obj, script_name, substitutions):
     obj.closing_time = seconds_in_future(obj.args.closing_time)
     substitutions['closing_time'] = obj.closing_time
     return substitutions
+
+
+def edit_dao_source(contracts_dir, keep_limits):
+    with open(os.path.join(contracts_dir, 'DAO.sol'), 'r') as f:
+        contents = f.read()
+
+    # remove all limits that would make testing impossible
+    if not keep_limits:
+        contents = contents.replace(" || _debatingPeriod < 1 weeks", "")
+        contents = contents.replace(" || (_debatingPeriod < 2 weeks)", "")
+        contents = contents.replace("|| now > p.votingDeadline + 41 days", "")
+        contents = contents.replace("now < closingTime + 40 days", "true")
+
+    # add test query functions
+    contents = contents.replace(
+        "contract DAO is DAOInterface, Token, TokenSale {",
+        """contract DAO is DAOInterface, Token, TokenSale {
+
+        function splitProposalBalance(uint pid, uint sid) constant returns (uint _balance) {
+            Proposal p = proposals[pid];
+            if (!p.newServiceProvider) throw;
+            SplitData s = p.splitData[sid];
+            return s.splitBalance;
+        }
+
+        function splitProposalSupply(uint pid, uint sid) constant returns (uint _supply) {
+            Proposal p = proposals[pid];
+            if (!p.newServiceProvider) throw;
+            SplitData s = p.splitData[sid];
+            return s.totalSupply;
+        }
+
+        function splitProposalrewardToken(uint pid, uint sid) constant returns (uint _rewardToken) {
+            Proposal p = proposals[pid];
+            if (!p.newServiceProvider) throw;
+            SplitData s = p.splitData[sid];
+            return s.rewardToken;
+        }
+
+        function splitProposalNewAddress(uint pid, uint sid) constant returns (address _DAO) {
+            Proposal p = proposals[pid];
+            if (!p.newServiceProvider) throw;
+            SplitData s = p.splitData[sid];
+            return address(s.newDAO);
+        }
+"""
+    )
+    contents = contents.replace(
+        'import "./TokenSale.sol";',
+        'import "./TokenSaleCopy.sol";'
+    )
+
+    new_path = os.path.join(contracts_dir, "DAOcopy.sol")
+    with open(new_path, "w") as f:
+        f.write(contents)
+
+    # now edit TokenSale source
+    with open(os.path.join(contracts_dir, 'TokenSale.sol'), 'r') as f:
+        contents = f.read()
+    if not keep_limits:
+        contents = contents.replace('closingTime - 2 weeks > now', 'true')
+    with open(os.path.join(contracts_dir, 'TokenSaleCopy.sol'), "w") as f:
+        f.write(contents)
+
+    return new_path
+
+
+def tokens_after_split(votes, original_balance, dao_balance, reward_tokens):
+    """
+    Create expected token and reward token results after the split scenario
+        Parameters
+        ----------
+        votes : array of booleans
+        The votes array of what each user voted
+
+        original_balance : array of ints
+        The original amount of tokens each user had before the split
+
+        dao_balance : int
+        The balance of ether left in the DAO before the scenario started
+
+        reward_tokens : float
+        Amount of reward tokens generated in the DAO before the scenario.
+
+        Returns
+        ----------
+        old_dao_balance : array of ints
+        The balance of tokens left in the old dao.
+
+        new_dao_balance : array of ints
+        The balance of tokens left in the new dao.
+
+        old_reward_tokens : float
+        The amount of reward tokens left in the old dao.
+
+        new_reward_tokens : float
+        The amount of reward tokens left in the new dao.
+    """
+
+    old_dao_balance = []
+    new_dao_balance = []
+    totalSupply = sum(original_balance)
+    old_reward_tokens = reward_tokens
+    new_reward_tokens = 0
+
+    for vote, orig in zip(votes, original_balance):
+        if vote:
+            new_dao_balance.append(orig * dao_balance / totalSupply)
+            old_dao_balance.append(0)
+            rewardToMove = float(orig) * reward_tokens / float(totalSupply)
+            old_reward_tokens -= float(rewardToMove)
+            new_reward_tokens += float(rewardToMove)
+        else:
+            old_dao_balance.append(orig)
+            new_dao_balance.append(0)
+    return (
+        old_dao_balance,
+        new_dao_balance,
+        old_reward_tokens,
+        new_reward_tokens
+    )

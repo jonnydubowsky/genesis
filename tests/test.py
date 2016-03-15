@@ -15,8 +15,8 @@ import random
 from utils import (
     constrained_sum_sample_pos, rm_file, determine_binary, ts_now,
     seconds_in_future, create_votes_array, arr_str, eval_test, write_js,
-    count_token_votes, create_genesis, calculate_reward,
-    calculate_closing_time, extract_test_dict
+    count_token_votes, create_genesis, calculate_reward, tokens_after_split,
+    calculate_closing_time, extract_test_dict, edit_dao_source
 )
 from args import test_args
 
@@ -43,6 +43,7 @@ class TestContext():
             'fund': self.run_test_fund,
             'proposal': self.run_test_proposal,
             'rewards': self.run_test_rewards,
+            'split': self.run_test_split,
         }
 
         # keep this at end since any data loaded should override constructor
@@ -154,17 +155,10 @@ class TestContext():
         if not os.path.isfile(dao_contract):
             print("DAO contract not found at {}".format(dao_contract))
             sys.exit(1)
-
-        if not keep_limits:
-            with open(dao_contract, 'r') as f:
-                contents = f.read()
-            contents = contents.replace(" || _debatingPeriod < 1 weeks", "")
-            contents = contents.replace(" || (_debatingPeriod < 2 weeks)", "")
-
-            new_path = os.path.join(self.contracts_dir, "DAOcopy.sol")
-            with open(new_path, "w") as f:
-                f.write(contents)
-            dao_contract = new_path
+        dao_contract = edit_dao_source(
+            self.contracts_dir,
+            keep_limits
+        )
 
         res = self.compile_contract(dao_contract)
         contract = res["contracts"]["DAO"]
@@ -179,9 +173,9 @@ class TestContext():
         self.offer_abi = res["contracts"]["SampleOffer"]["abi"]
         self.offer_bin = res["contracts"]["SampleOffer"]["bin"]
 
-        if not keep_limits:
-            # also delete the temporary created file
-            rm_file(new_path)
+        # also delete the temporary created files
+        rm_file(os.path.join(self.contracts_dir, "DAOcopy.sol"))
+        rm_file(os.path.join(self.contracts_dir, "TokenSaleCopy.sol"))
 
     def create_js_file(self, name, substitutions, cb_before_creation=None):
         """
@@ -189,7 +183,7 @@ class TestContext():
 
         Parameters
         ----------
-        nam : string
+        name : string
         The name of the javascript file without the '.js' extension
 
         substitutions : dict
@@ -234,9 +228,16 @@ class TestContext():
         output = self.run_script('deploy.js')
         results = extract_test_dict('deploy', output)
 
-        self.dao_creator_addr = results['dao_creator_address']
-        self.dao_addr = results['dao_address']
-        self.offer_addr = results['offer_address']
+        try:
+            self.dao_creator_addr = results['dao_creator_address']
+            self.dao_addr = results['dao_address']
+            self.offer_addr = results['offer_address']
+        except:
+            print(
+                "ERROR: Could not find expected results in the deploy scenario"
+                ". The output was:\n{}".format(output)
+            )
+            sys.exit(1)
         print("DAO Creator address is: {}".format(self.dao_creator_addr))
         print("DAO address is: {}".format(self.dao_addr))
         print("SampleOffer address is: {}".format(self.offer_addr))
@@ -342,7 +343,6 @@ class TestContext():
             self.run_test_proposal()
 
         debate_secs = 15
-        # self.create_rewards_js(debate_secs)
         self.create_js_file(
             'rewards',
             {
@@ -360,11 +360,53 @@ class TestContext():
             "as much".format(debate_secs)
         )
         output = self.run_script('rewards.js')
-        eval_test('rewards.js', output, {
+        results = eval_test('rewards.js', output, {
             "provider_reward_portion": calculate_reward(
                 self.token_amounts[0],
                 self.total_supply,
                 self.args.total_rewards)
+        })
+        self.dao_balance_after_rewards = results['DAO_balance']
+        self.dao_rewardToken_after_rewards = results['DAO_rewardToken']
+
+    def run_test_split(self):
+        if self.prop_id != 2:
+            # run the rewards scenario first
+            self.run_test_rewards()
+
+        debate_secs = 15
+        votes = create_votes_array(
+            self.token_amounts,
+            not self.args.proposal_fail
+        )
+        self.create_js_file(
+            'split',
+            {
+                "dao_abi": self.dao_abi,
+                "dao_address": self.dao_addr,
+                "debating_period": debate_secs,
+                "votes": arr_str(votes),
+                "prop_id": self.next_proposal_id()
+            }
+        )
+        print(
+            "Notice: Debate period is {} seconds so the test will wait "
+            "as much".format(debate_secs)
+        )
+        output = self.run_script('split.js')
+        oldBalance, newBalance, oldDAORewards, newDAORewards = tokens_after_split(
+            votes,
+            self.token_amounts,
+            self.dao_balance_after_rewards,
+            self.dao_rewardToken_after_rewards
+        )
+        eval_test('split.js', output, {
+            # default deposit,a simple way to test new DAO contract got created
+            "newDAOProposalDeposit": 20,
+            "oldDAOBalance": oldBalance,
+            "newDAOBalance": newBalance,
+            "oldDaoRewardTokens": oldDAORewards,
+            "newDaoRewardTokens": newDAORewards
         })
 
     def run_test_none(self):

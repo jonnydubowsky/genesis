@@ -86,7 +86,7 @@ def test_args():
     )
     p.add_argument(
         '--scenario',
-        choices=['none', 'deploy', 'fund', 'proposal', 'rewards'],
+        choices=['none', 'deploy', 'fund', 'proposal', 'rewards', 'split'],
         default='none',
         help='Test scenario to play out'
     )

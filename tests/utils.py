@@ -180,10 +180,10 @@ def create_genesis(accounts):
     genesis["timestamp"] = "0x0"
     # Start after homesteam
     genesis["parentHash"] = (
-        "0x584bdb5d4e74fe97f5a5222b533fe1322fd0b6ad3eb03f02c3221984e2c0b430"
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
     )
     genesis["extraData"] = "0x0"
-    genesis["gasLimit"] = "0x8000000"
+    genesis["gasLimit"] = "0x47e7c4"
     genesis["difficulty"] = (
         "0x0000000000000000000000000000000000000000000000000000000000000001"
     )

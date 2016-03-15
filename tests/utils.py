@@ -157,11 +157,18 @@ def create_genesis(accounts):
     genesis = {}
     genesis["nonce"] = "0xdeadbeefdeadbeef"
     genesis["timestamp"] = "0x0"
-    genesis["parentHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+    # Start after homesteam
+    genesis["parentHash"] = (
+        "0x584bdb5d4e74fe97f5a5222b533fe1322fd0b6ad3eb03f02c3221984e2c0b430"
+    )
     genesis["extraData"] = "0x0"
     genesis["gasLimit"] = "0x8000000"
-    genesis["difficulty"] = "0x000000001"
-    genesis["mixhash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+    genesis["difficulty"] = (
+        "0x0000000000000000000000000000000000000000000000000000000000000001"
+    )
+    genesis["mixhash"] = (
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+    )
     alloc = {}
     for acc in accounts:
         alloc[acc] = {"balance": "133700000000000000000000000000000000"}

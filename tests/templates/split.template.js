@@ -52,7 +52,7 @@ setTimeout(function() {
             dao.splitDAO.sendTransaction(
                 prop_id,
                 newServiceProvider,
-                {from:eth.accounts[i], gas:4000000}
+                {from:eth.accounts[i], gas: $split_gas}
             );
         }
     }

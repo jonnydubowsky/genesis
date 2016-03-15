@@ -35,7 +35,7 @@ contract TokenSaleInterface {
     // only the address stored in privateSale is allowed to purchase tokens
     address public privateSale;
     // hold extra ether which has been paid after the DAO token price has increased
-    ManagedAccount extraBalance;
+    ManagedAccount public extraBalance;
     // tracks the amount of wei given from each contributor (used for refund)
     mapping (address => uint256) weiGiven;
 

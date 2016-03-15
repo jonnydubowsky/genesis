@@ -124,6 +124,25 @@ def compare_values(a, b):
 
 
 def eval_test(name, output, expected_dict):
+    """
+    Evaluate output of a scenario and compare with expected results
+        Parameters
+        ----------
+        name : string
+        The name of the scenario to evaluate
+
+        output : string
+        The output of the script that was executed, from which we will
+        extract the results
+
+        expected_dict : dict
+        A dictionary containing all the expected output from the test
+
+        Returns
+        ----------
+        results : dict
+        The dictionary that resulted from the parsing of the test output
+    """
     tests_fail = False
     results = extract_test_dict(name, output)
 
@@ -139,9 +158,11 @@ def eval_test(name, output, expected_dict):
             ))
 
     if not tests_fail:
-        print("Tests for '{}' PASSED!".format(name))
+        print("Tests for scenario '{}' PASSED!".format(name))
     else:
-        print("Tests for '{}' FAILED! Script output was:\n{}".format(name, output))
+        print("Tests for scenario '{}' FAILED! Script output was:\n{}".format(
+            name, output)
+        )
         sys.exit(1)
     return results
 
@@ -157,11 +178,18 @@ def create_genesis(accounts):
     genesis = {}
     genesis["nonce"] = "0xdeadbeefdeadbeef"
     genesis["timestamp"] = "0x0"
-    genesis["parentHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+    # Start after homesteam
+    genesis["parentHash"] = (
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+    )
     genesis["extraData"] = "0x0"
-    genesis["gasLimit"] = "0x8000000"
-    genesis["difficulty"] = "0x000000001"
-    genesis["mixhash"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+    genesis["gasLimit"] = "0x47e7c4"
+    genesis["difficulty"] = (
+        "0x0000000000000000000000000000000000000000000000000000000000000001"
+    )
+    genesis["mixhash"] = (
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+    )
     alloc = {}
     for acc in accounts:
         alloc[acc] = {"balance": "133700000000000000000000000000000000"}

@@ -44,6 +44,7 @@ class TestContext():
             'proposal': self.run_test_proposal,
             'rewards': self.run_test_rewards,
             'split': self.run_test_split,
+            'split-insufficient-gas': self.run_test_split_insufficient_gas,
         }
 
         # keep this at end since any data loaded should override constructor
@@ -284,7 +285,7 @@ class TestContext():
             "as much".format(sale_secs)
         )
         output = self.run_script('fund.js')
-        eval_test('fund.js', output, {
+        eval_test('fund', output, {
             "dao_funded": True,
             "total_supply": self.total_supply,
             "balances": self.token_amounts,
@@ -325,7 +326,7 @@ class TestContext():
             "as much".format(debate_secs)
         )
         output = self.run_script('proposal.js')
-        eval_test('proposal.js', output, {
+        eval_test('proposal', output, {
             "dao_proposals_number": "1",
             "proposal_passed": True,
             "proposal_yay": yay,
@@ -360,7 +361,7 @@ class TestContext():
             "as much".format(debate_secs)
         )
         output = self.run_script('rewards.js')
-        results = eval_test('rewards.js', output, {
+        results = eval_test('rewards', output, {
             "provider_reward_portion": calculate_reward(
                 self.token_amounts[0],
                 self.total_supply,
@@ -369,7 +370,7 @@ class TestContext():
         self.dao_balance_after_rewards = results['DAO_balance']
         self.dao_rewardToken_after_rewards = results['DAO_rewardToken']
 
-    def run_test_split(self):
+    def prepare_test_split(self, split_gas):
         if self.prop_id != 2:
             # run the rewards scenario first
             self.run_test_rewards()
@@ -385,6 +386,7 @@ class TestContext():
                 "dao_abi": self.dao_abi,
                 "dao_address": self.dao_addr,
                 "debating_period": debate_secs,
+                "split_gas": split_gas,
                 "votes": arr_str(votes),
                 "prop_id": self.next_proposal_id()
             }
@@ -394,19 +396,45 @@ class TestContext():
             "as much".format(debate_secs)
         )
         output = self.run_script('split.js')
+        return votes, output
+
+    def run_test_split(self):
+        votes, output = self.prepare_test_split(4000000)
         oldBalance, newBalance, oldDAORewards, newDAORewards = tokens_after_split(
             votes,
             self.token_amounts,
             self.dao_balance_after_rewards,
             self.dao_rewardToken_after_rewards
         )
-        eval_test('split.js', output, {
+        eval_test('split', output, {
             # default deposit,a simple way to test new DAO contract got created
             "newDAOProposalDeposit": 20,
             "oldDAOBalance": oldBalance,
             "newDAOBalance": newBalance,
             "oldDaoRewardTokens": oldDAORewards,
             "newDaoRewardTokens": newDAORewards
+        })
+
+    def run_test_split_insufficient_gas(self):
+        """
+        Test that splitting with insufficient gas, will fail reliably and will
+        not leave an empty contract in the state burning away user tokens in
+        the process.
+
+        This should happen with the latest homestead changes:
+        https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2.mediawiki#specification
+        """
+        votes, output = self.prepare_test_split(1000)
+        oldBalance, newBalance, oldDAORewards, newDAORewards = tokens_after_split(
+            votes,
+            self.token_amounts,
+            self.dao_balance_after_rewards,
+            self.dao_rewardToken_after_rewards
+        )
+        eval_test('split-insufficient-gas', output, {
+            "newDAOProposalDeposit": 0,
+            "oldDAOBalance": self.token_amounts,
+            "newDAOBalance": [0] * len(self.token_amounts),
         })
 
     def run_test_none(self):

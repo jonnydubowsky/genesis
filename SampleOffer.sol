@@ -109,7 +109,7 @@ contract SampleOffer {
     }
 
     function setDeploymentFee(uint _deploymentReward) callingRestriction {
-        if (deploymentReward > 100 ether && msg.sender != address(client))
+        if (deploymentReward > 10 ether && msg.sender != address(client))
             throw; // TODO, set a max defined by service provider, or ideally oracle (set in euro)
         deploymentReward = _deploymentReward;
     }

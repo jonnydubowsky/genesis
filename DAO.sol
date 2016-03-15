@@ -270,6 +270,13 @@ contract DAOInterface {
     /// @return Whether the change was successful or not
     function halveMinQuorum() returns (bool _success);
 
+    /// @return total number of proposals ever created
+    function numberOfProposals() constant returns (uint _numberOfProposals);
+
+    /// @param _account The address of the account which is checked.
+    /// @return Whether the account is blocked (not allowed to transfer tokens) or not.
+    function isBlocked(address _account) returns (bool);
+
 
     event ProposalAdded(
         uint indexed proposalID,

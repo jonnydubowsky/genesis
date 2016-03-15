@@ -537,6 +537,7 @@ contract DAO is DAOInterface, Token, TokenSale {
             p.splitData[0].splitBalance = this.balance - p.proposalDeposit;
             p.splitData[0].rewardToken = rewardToken[address(this)];
             p.splitData[0].totalSupply = totalSupply;
+            p.proposalPassed = true;
         }
 
         // Move funds and assign new Tokens

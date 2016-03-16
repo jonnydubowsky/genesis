@@ -60,5 +60,5 @@ This contract is used as a fall back in case an exchange doesn't implement the "
 
 
 ## Contact
-Please contact us on [slack](https://slockit.slack.com/messages/dao/)
+Please contact us on [slack](https://genesisdao.slack.com/messages/general/)
 
